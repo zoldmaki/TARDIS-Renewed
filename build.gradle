@@ -1,0 +1,60 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            name = 'forge'
+            url = 'https://maven.minecraftforge.net'
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+version = '0.3.0-alpha'
+group = 'dev.zoldmaki.renewedtardis'
+archivesBaseName = 'TARDIS-Renewed'
+
+sourceCompatibility = targetCompatibility = '1.8'
+compileJava {
+    sourceCompatibility = targetCompatibility = '1.8'
+    options.encoding = 'UTF-8'
+}
+
+minecraft {
+    version = '1.12.2-14.23.5.2847'
+    runDir = 'run'
+    mappings = 'stable_39'
+    makeObfSourceJar = false
+}
+
+dependencies {
+    // Darkcore 0.41-179 remains a behavior/source reference only.
+    // TARDIS Renewed replaces the Darkcore features it needs internally.
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mcversion', project.minecraft.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand(
+            'version': project.version,
+            'mcversion': project.minecraft.version
+        )
+    }
+
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+        exclude '**/*.bak'
+        exclude '**/*.xcf'
+        exclude '**/*.psd'
+        exclude '**/*.blend'
+        exclude '**/*.blend1'
+        exclude '**/*.wav'
+    }
+}

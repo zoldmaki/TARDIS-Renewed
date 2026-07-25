@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "renewedtardis",
+    "name": "TARDIS Renewed",
+    "description": "A permitted continuation and port of DarkholmeTenk's classic 1.7.10 TARDIS Mod, targeting Minecraft 1.12.2.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["zoldmaki", "project collaborator"],
+    "credits": "Original TARDIS Mod by DarkholmeTenk. Original textures and models by DarkholmeTenk and Kilynn. Port developed by zoldmaki and collaborator with permission.",
+    "logoFile": "assets/renewedtardis/textures/gui/mod_logo.png",
+    "screenshots": [],
+    "dependencies": ["forge@[14.23.5.2847,)"]
+  }
+]

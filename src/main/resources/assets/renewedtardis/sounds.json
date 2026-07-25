@@ -1,0 +1,15 @@
+{
+  "ambient": {"category": "ambient", "sounds": [{"name": "renewedtardis:ambient", "stream": false}]},
+  "engines": {"category": "blocks", "sounds": [{"name": "renewedtardis:engines", "stream": false}]},
+  "engine_drum": {"category": "blocks", "sounds": [{"name": "renewedtardis:engine_drum", "stream": false}]},
+  "landing": {"category": "blocks", "sounds": [{"name": "renewedtardis:landing", "stream": false}]},
+  "landing_interior": {"category": "blocks", "sounds": [{"name": "renewedtardis:landing_interior", "stream": false}]},
+  "level_up": {"category": "players", "sounds": [{"name": "renewedtardis:level_up", "stream": false}]},
+  "locked": {"category": "blocks", "sounds": [{"name": "renewedtardis:locked", "stream": false}]},
+  "sonic": {"category": "players", "sounds": [{"name": "renewedtardis:sonic", "stream": false}]},
+  "takeoff": {"category": "blocks", "sounds": [{"name": "renewedtardis:takeoff", "stream": false}]},
+  "transmat": {"category": "blocks", "sounds": [{"name": "renewedtardis:transmat", "stream": false}]},
+  "transmat_fail": {"category": "blocks", "sounds": [{"name": "renewedtardis:transmat_fail", "stream": false}]},
+  "crack": {"category": "blocks", "sounds": [{"name": "renewedtardis:crack", "stream": false}]},
+  "decorate": {"category": "blocks", "sounds": [{"name": "renewedtardis:decorate", "stream": false}]}
+}

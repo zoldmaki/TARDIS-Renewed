@@ -1,0 +1,17 @@
+{
+  "type": "forge:ore_shaped",
+  "pattern": [
+    "CCC",
+    "CCC",
+    "CCC"
+  ],
+  "key": {
+    "C": {
+      "type": "forge:ore_dict",
+      "ore": "ingotChronosteel"
+    }
+  },
+  "result": {
+    "item": "renewedtardis:chronosteel_block"
+  }
+}

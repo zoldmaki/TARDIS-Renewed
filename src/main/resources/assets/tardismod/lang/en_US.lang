@@ -1,0 +1,108 @@
+tile.TardisMod.DecoBlock.name=Decorative Block
+tile.TardisMod.Tardis.name=TARDIS
+
+tile.TardisMod.DecoBlock.Wall.name=Wall
+tile.TardisMod.DecoBlock.Floor.name=Walkway
+tile.TardisMod.DecoGlass.Walkway.name=Open Walkway
+tile.TardisMod.DecoGlass.Glass.name=Glass
+
+tile.TardisMod.Component.Roundel.name=Open Roundel
+tile.TardisMod.Component.CorridorRoundel.name=Open White Roundel
+
+tile.TardisMod.Schema.name=Schema Boundary
+
+tile.TardisMod.SchemaComponent.DoorConnector.name=Door
+tile.TardisMod.SchemaComponent.DoorConnectorHidden.name=Door
+tile.TardisMod.SchemaComponent.ControlPanel.name=Room Control Panel
+tile.TardisMod.SchemaComponent.ConsoleBlock.name=Console
+tile.TardisMod.SchemaComponent.TardisDoorBottom.name=Door
+tile.TardisMod.SchemaComponent.TardisDoorTop.name=Door
+tile.TardisMod.SchemaComponent.ConsoleTop.name=Console
+tile.TardisMod.SchemaCore.name=Schema Core
+
+tile.TardisMod.Slab.Console.name=Console Slab
+tile.TardisMod.Slab.Glass.name=Glass Slab
+tile.TardisMod.Slab.Walkway.name=Walkway
+tile.TardisMod.Slab.Corridor.name=Corridor Slab
+
+tile.TardisMod.TardisTop.name=TARDIS
+tile.TardisMod.InternalDoor.InternalDoor.name=Door
+tile.TardisMod.InternalDoor.InternalDoorPrimary.name=Primary Door
+tile.TardisMod.ConsoleBlock.name=Console
+tile.TardisMod.TardisCore.name=Time Rotor
+tile.TardisMod.SchemaComponent.TimeRotor.name=Time Rotor
+tile.TardisMod.StairBlock.name=Stair
+tile.TardisMod.TardisEngineBlock.name=Temporal Engine
+tile.TardisMod.SchemaComponent.Engine.name=Temporal Engine
+tile.TardisMod.Lab.name=Temporal Laboratory
+tile.TardisMod.LandingPad.name=TARDIS Landing Pad
+tile.TardisMod.TardisDirt.name=Temporal Dirt
+tile.TardisMod.Summoner.name=TARDIS Recaller
+tile.TardisMod.Manual.name=Manual
+tile.TardisMod.ManualHelper.name=Manual
+tile.TardisMod.ShieldBlock.name=TARDIS Prevention Matrix
+
+tile.TardisMod.GravityLift.Normal.name=Solid Gravity Lift
+tile.TardisMod.GravityLift.Craftable.name=Gravity Lift
+tile.TardisMod.ForceField.Normal.name=Solid Force Field
+tile.TardisMod.ForceField.Craftable.name=Force Field
+
+tile.TardisMod.Battery.Basic.name=Basic Artron Battery
+tile.TardisMod.Battery.Advanced.name=Advanced Artron Battery
+tile.TardisMod.Battery.Temporal.name=Temporal Artron Battery
+
+tile.TardisMod.ColorableWall.name=Solid Block
+tile.TardisMod.ColorableFloor.name=Flat Block
+tile.TardisMod.ColorableBrick.name=Solid Bricks
+tile.TardisMod.ColorablePlank.name=Solid Planks
+tile.TardisMod.ColorableRoundel.name=Roundel
+tile.TardisMod.ColorableOpenRoundel.name=Open Roundel
+
+tile.TardisMod.ColorableWall.Simulacrum.name=Solid Block (c)
+tile.TardisMod.ColorableFloor.Simulacrum.name=Flat Block (c)
+tile.TardisMod.ColorableBrick.Simulacrum.name=Solid Bricks (c)
+tile.TardisMod.ColorablePlank.Simulacrum.name=Solid Planks (c)
+tile.TardisMod.DecoGlass.Simulacrum.Glass.name=Glass (c)
+tile.TardisMod.DecoBlock.Simulacrum.Wall.name=Wall (c)
+tile.TardisMod.DecoBlock.Simulacrum.Floor.name=Walkway (c)
+tile.TardisMod.DecoGlass.Simulacrum.Walkway.name=Open Walkway (c)
+
+item.TardisMod.SonicScrewdriver.name=Sonic Screwdriver
+item.TardisMod.TardisKey.name=TARDIS Key
+
+item.TardisMod.Component.Transmat.name=TARDIS Cable Interface - Transmat
+item.TardisMod.Component.Mass-Energy.name=TARDIS Cable Interface - ME Cable
+item.TardisMod.Component.Inv.name=TARDIS Cable Interface - Itemduct
+item.TardisMod.Component.Fluid.name=TARDIS Cable Interface - Fluiduct
+item.TardisMod.Component.RF.name=TARDIS Cable Interface - Energy Conduit
+item.TardisMod.Component.Peripheral.name=TARDIS Cable Interface - Computercraft (Unfinished)
+item.TardisMod.Component.ChunkLoader.name=TARDIS Cable Interface - Chunk Loader
+item.TardisMod.Component.Nanogene.name=Nanogene Canister
+item.TardisMod.Component.Aspects.name=TARDIS Cable Interface - Essentia
+
+item.TardisMod.ManualItem.name=Handheld Manual
+item.TardisMod.NameTag.name=Temporal Name Tag
+item.TardisMod.Decorator.name=TARDIS Decorator
+
+item.TardisMod.CraftingComponent.IngotDalek.name=Dalekanium Ingot
+item.TardisMod.CraftingComponent.IngotChronosteel.name=Chronosteel Ingot
+item.TardisMod.CraftingComponent.CrystalKontron.name=Kontron Crystal
+item.TardisMod.CraftingComponent.Upgrade.name=Upgrade Template
+
+item.TardisMod.UpgradeItem.broken.name=Broken Upgrade
+item.TardisMod.UpgradeItem.protExpl.name=Upgrade - Explosion Protection
+item.TardisMod.UpgradeItem.protComb.name=Upgrade - Combat Protection
+item.TardisMod.UpgradeItem.protMiss.name=Upgrade - Missed Control Protection
+item.TardisMod.UpgradeItem.speed.name=Upgrade - Speed Level
+item.TardisMod.UpgradeItem.shield.name=Upgrade - Shield Level
+item.TardisMod.UpgradeItem.room.name=Upgrade - Max Rooms Level
+item.TardisMod.UpgradeItem.energy.name=Upgrade - Energy Level
+item.TardisMod.UpgradeItem.energyRegen.name=Upgrade - Energy Regen Level
+item.TardisMod.ChameleonUpgrade.name=Upgrade - Chameleon Circuit
+
+TardisCham.Default.name=Old Police Box
+TardisCham.New.name=New Police Box
+TardisCham.Post.name=Post Box
+
+itemGroup.TardisModTab=Tardis Mod
+itemGroup.TardisModCraftableTab=Tardis Mod - Craftable
