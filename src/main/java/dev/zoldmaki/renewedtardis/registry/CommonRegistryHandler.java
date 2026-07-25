@@ -19,23 +19,30 @@ public final class CommonRegistryHandler {
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
-        event.getRegistry().register(ModBlocks.CHRONOSTEEL_BLOCK);
+        event.getRegistry().registerAll(
+            ModBlocks.CHRONOSTEEL_BLOCK,
+            ModBlocks.TARDIS_EXTERIOR
+        );
     }
 
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event) {
         event.getRegistry().registerAll(
             ModItems.CHRONOSTEEL_INGOT,
-            ModItems.TARDIS_KEY
+            ModItems.TARDIS_KEY,
+            createItemBlock(ModBlocks.CHRONOSTEEL_BLOCK),
+            createItemBlock(ModBlocks.TARDIS_EXTERIOR)
         );
-
-        ItemBlock chronosteelBlockItem = new ItemBlock(ModBlocks.CHRONOSTEEL_BLOCK);
-        chronosteelBlockItem.setRegistryName(ModBlocks.CHRONOSTEEL_BLOCK.getRegistryName());
-        event.getRegistry().register(chronosteelBlockItem);
     }
 
     @SubscribeEvent
     public static void registerSounds(RegistryEvent.Register<SoundEvent> event) {
         event.getRegistry().registerAll(ModSounds.ALL);
+    }
+
+    private static ItemBlock createItemBlock(Block block) {
+        ItemBlock itemBlock = new ItemBlock(block);
+        itemBlock.setRegistryName(block.getRegistryName());
+        return itemBlock;
     }
 }

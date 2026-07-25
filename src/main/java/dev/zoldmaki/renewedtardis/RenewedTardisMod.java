@@ -3,10 +3,13 @@ package dev.zoldmaki.renewedtardis;
 import dev.zoldmaki.renewedtardis.command.CommandTardisRenewed;
 import dev.zoldmaki.renewedtardis.init.ModBlocks;
 import dev.zoldmaki.renewedtardis.init.ModItems;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisExterior;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.oredict.OreDictionary;
 import org.apache.logging.log4j.Logger;
 
@@ -21,14 +24,18 @@ import org.apache.logging.log4j.Logger;
 public final class RenewedTardisMod {
     public static final String MOD_ID = "renewedtardis";
     public static final String NAME = "TARDIS Renewed";
-    public static final String VERSION = "0.3.0-alpha";
+    public static final String VERSION = "0.4.0-alpha";
 
     public static Logger logger;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         logger = event.getModLog();
-        logger.info("TARDIS Renewed Phase 2 pre-initialization started.");
+        GameRegistry.registerTileEntity(
+            TileEntityTardisExterior.class,
+            new ResourceLocation(MOD_ID, "tardis_exterior")
+        );
+        logger.info("TARDIS Renewed Phase 3 pre-initialization started.");
     }
 
     @Mod.EventHandler
@@ -36,7 +43,7 @@ public final class RenewedTardisMod {
         OreDictionary.registerOre("ingotChronosteel", ModItems.CHRONOSTEEL_INGOT);
         OreDictionary.registerOre("blockChronosteel", ModBlocks.CHRONOSTEEL_BLOCK);
 
-        logger.info("TARDIS Renewed Phase 2 loaded: persistent TARDIS registry, TARDIS Key, and test commands.");
+        logger.info("TARDIS Renewed Phase 3 loaded: persistent exterior links and key locking.");
     }
 
     @Mod.EventHandler

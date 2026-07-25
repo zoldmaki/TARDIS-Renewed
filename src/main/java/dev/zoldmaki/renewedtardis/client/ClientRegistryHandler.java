@@ -18,23 +18,17 @@ public final class ClientRegistryHandler {
 
     @SubscribeEvent
     public static void registerModels(ModelRegistryEvent event) {
-        ModelLoader.setCustomModelResourceLocation(
-            ModItems.CHRONOSTEEL_INGOT,
-            0,
-            new ModelResourceLocation(ModItems.CHRONOSTEEL_INGOT.getRegistryName(), "inventory")
-        );
+        registerItemModel(ModItems.CHRONOSTEEL_INGOT);
+        registerItemModel(ModItems.TARDIS_KEY);
+        registerItemModel(Item.getItemFromBlock(ModBlocks.CHRONOSTEEL_BLOCK));
+        registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_EXTERIOR));
+    }
 
+    private static void registerItemModel(Item item) {
         ModelLoader.setCustomModelResourceLocation(
-            ModItems.TARDIS_KEY,
+            item,
             0,
-            new ModelResourceLocation(ModItems.TARDIS_KEY.getRegistryName(), "inventory")
-        );
-
-        Item blockItem = Item.getItemFromBlock(ModBlocks.CHRONOSTEEL_BLOCK);
-        ModelLoader.setCustomModelResourceLocation(
-            blockItem,
-            0,
-            new ModelResourceLocation(ModBlocks.CHRONOSTEEL_BLOCK.getRegistryName(), "inventory")
+            new ModelResourceLocation(item.getRegistryName(), "inventory")
         );
     }
 }

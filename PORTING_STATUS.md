@@ -1,83 +1,77 @@
-# TARDIS Renewed Porting Status
+# TARDIS Renewed porting status
 
-## Fixed project baseline
+## Canonical legacy references
 
-- Display name: **TARDIS Renewed**
-- Target: Minecraft 1.12.2
-- Forge: 14.23.5.2847
-- Mappings: stable_39
-- Java: Temurin 8u492
-- Gradle: 4.9
-- Legacy TARDIS reference: 1.7.10-0.995-350
-- Legacy Darkcore reference: 0.41-179
-- Mod ID / namespace: `renewedtardis`
-- Java package: `dev.zoldmaki.renewedtardis`
-- Save policy: native 1.12.2 worlds only; no 1.7.10 world importer
+- TARDIS Mod 1.7.10: `0.995-350`
+- Darkcore 1.7.10: `0.41-179`
+- Target: Minecraft 1.12.2 / Forge `14.23.5.2847`
+- Mappings: `stable_39`
+- Java: Eclipse Temurin 8
+- Legacy-world importing: intentionally out of scope
+
+## Stable project identity
+
+- Public name: **TARDIS Renewed**
+- Mod ID / registry namespace: `renewedtardis`
+- Java package root: `dev.zoldmaki.renewedtardis`
+
+The mod ID should not be changed after public worlds begin using the mod.
 
 ## Completed
 
 ### Phase 0
 
-- ForgeGradle project scaffold
+- ForgeGradle 2.3 loading scaffold
+- Java 8 build configuration
 - Mod metadata and logo
-- Initial legacy resource archive
-- Successful clean build and client launch
+- Legacy resource inventory
 
 ### Phase 1
 
-- Forge 1.12.2 registry-event structure
-- Client-only model registration isolated from common/server code
+- Registry-event structure
+- Client-only item/block model registration
 - TARDIS Renewed creative tab
-- Chronosteel Ingot and Chronosteel Block
-- Chronosteel crafting and ore-dictionary entries
-- Legacy sounds copied into the new namespace and registered
+- Chronosteel ingot and block
+- Sound-event placeholders using the legacy audio assets
 
 ### Phase 2
 
-- Public display name changed to **TARDIS Renewed**
-- First internal Darkcore replacement: dimension-aware block-position value object
-- Versioned native `WorldSavedData` TARDIS registry
-- UUID-based TARDIS identity and UUID-based player ownership
-- Reserved persistent fields for interior dimension and exterior position
-- One-TARDIS-per-owner lookup and creation
-- Functional TARDIS Key item with legacy texture
-- Unbound keys bind to the player's persistent TARDIS record on right-click
-- Bound-key owner and TARDIS identity stored in item NBT
-- Non-destructive `/tardisrenewed` command surface with `/tr` alias
-- Legacy four-iron TARDIS Key recipe ported
+- Native global `WorldSavedData`
+- UUID-based TARDIS records and ownership
+- Persistent key binding
+- `/tardisrenewed` and `/tr` test commands
+- Reserved interior-dimension and exterior-position data
 
-## Intentional design decisions
+### Phase 3
 
-- The public name is **TARDIS Renewed**, while the stable registry namespace remains `renewedtardis`.
-- TARDIS identity uses a UUID and is not tied directly to a dimension number.
-- Player ownership uses UUIDs; names are retained only for display and are refreshed when seen.
-- World data lives in the overworld's `MapStorage`, so it is independent of TARDIS dimension loading.
-- Old metadata-heavy blocks/items will normally become separate registry entries.
-- Darkcore will not be a required runtime mod. Needed features will be replaced internally.
-- Old assets may be used as placeholders and replaced with Blockbench models/textures later.
-- Registry names must remain stable once worlds containing the content are created.
-- Legacy-world migration is outside project scope.
+- Fixed TARDIS Key recipe JSON
+- Prototype TARDIS exterior block
+- Persistent exterior tile entity
+- Saved TARDIS-to-exterior links
+- Matching-key lock and unlock behavior
+- Safe `/tr exterior` placement and relocation command
+- Exterior position cleanup when the linked block is broken
 
-## Not ported yet
+## Current version
 
-- TARDIS exterior block and tile entity
-- interior dimension registration and allocation
-- teleportation and door linking
-- console and flight mechanics
-- screwdriver
-- GUI/networking
-- schemas and room generation
-- damage, upgrades, energy, and integrations
+`0.4.0-alpha`
 
-## Next proposed milestone
+## Current architectural boundary
 
-Phase 3 should build the first safe dimension prototype:
+The Phase 3 exterior is a one-block functional prototype, not a commitment to
+the final exterior shape. The important stable pieces are the TARDIS UUID,
+owner UUID, exterior location, and lock state.
 
-1. native TARDIS dimension type and world provider
-2. deterministic interior-dimension allocation linked to `TardisRecord`
-3. a small temporary interior platform for testing
-4. server-authoritative teleport helper with safe placement
-5. `/tr enter` and `/tr exit` debug commands
-6. restart, death, logout, and dedicated-server smoke tests
+The next major architectural decision is the interior layout strategy:
 
-The exterior block should come only after entering and leaving an assigned interior works reliably.
+1. one dynamically registered dimension per TARDIS, close to the original mod;
+2. one shared TARDIS dimension with widely separated interior regions.
+
+The choice should be made before implementing real entry teleportation because
+it affects save structure, chunk loading, recovery tools, and future features.
+
+## Next recommended phase
+
+Phase 4 should establish the interior dimension skeleton, safe teleportation,
+a return location, and recovery commands. It should use a deliberately simple
+test room before importing schemas or console mechanics.
