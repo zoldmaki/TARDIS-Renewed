@@ -8,6 +8,8 @@ import dev.zoldmaki.renewedtardis.data.TardisWorldData;
 import dev.zoldmaki.renewedtardis.init.ModItems;
 import dev.zoldmaki.renewedtardis.init.ModSounds;
 import dev.zoldmaki.renewedtardis.item.ItemTardisKey;
+import dev.zoldmaki.renewedtardis.interaction.TardisInteractionGuard;
+import dev.zoldmaki.renewedtardis.teleport.TardisTeleportService;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisExterior;
 import java.util.UUID;
 import net.minecraft.block.Block;
@@ -30,9 +32,8 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 
 /**
- * One-block exterior prototype used to validate persistent linking, tile
- * entity storage, ownership checks, and key locking before the final model and
- * interior teleportation are introduced.
+ * One-block exterior prototype. Its persistent identity and lock state will be
+ * retained when the final multi-block model replaces it.
  */
 public final class BlockTardisExterior extends Block {
     public static final PropertyDirection FACING = BlockHorizontal.FACING;
@@ -73,6 +74,9 @@ public final class BlockTardisExterior extends Block {
         if (world.isRemote) {
             return true;
         }
+        if (!TardisInteractionGuard.tryBegin(player, world, pos)) {
+            return true;
+        }
 
         TileEntity tile = world.getTileEntity(pos);
         if (!(tile instanceof TileEntityTardisExterior)) {
@@ -97,7 +101,23 @@ public final class BlockTardisExterior extends Block {
             return true;
         }
 
-        send(player, TextFormatting.AQUA, "The door opens, but the interior dimension is not connected yet.");
+        if (!(player instanceof EntityPlayerMP) || world.getMinecraftServer() == null) {
+            return false;
+        }
+
+        TardisWorldData data = TardisWorldData.get(world.getMinecraftServer());
+        TardisRecord record = data.getById(exterior.getTardisId());
+        if (record == null) {
+            send(player, TextFormatting.RED, "This exterior points to a missing TARDIS record.");
+            return true;
+        }
+
+        if (record.isInFlight()) {
+            send(player, TextFormatting.YELLOW, "The TARDIS is currently in flight.");
+            return true;
+        }
+
+        TardisTeleportService.enterInterior((EntityPlayerMP) player, record);
         return true;
     }
 
@@ -128,6 +148,10 @@ public final class BlockTardisExterior extends Block {
             send(player, TextFormatting.RED, "This key points to a missing TARDIS record.");
             return true;
         }
+        if (record.isInFlight()) {
+            send(player, TextFormatting.YELLOW, "That TARDIS is currently in flight.");
+            return true;
+        }
 
         if (!exterior.isBound()) {
             DimensionPosition existingPosition = record.getExteriorPosition();
@@ -156,6 +180,7 @@ public final class BlockTardisExterior extends Block {
         }
 
         exterior.setLocked(!exterior.isLocked());
+        data.setExteriorLocked(record.getTardisId(), exterior.isLocked());
         world.playSound(null, pos, ModSounds.LOCKED, SoundCategory.BLOCKS, 0.7F, exterior.isLocked() ? 0.9F : 1.2F);
         send(
             player,
@@ -174,7 +199,11 @@ public final class BlockTardisExterior extends Block {
                 if (tardisId != null) {
                     TardisWorldData data = TardisWorldData.get(world.getMinecraftServer());
                     TardisRecord record = data.getById(tardisId);
-                    if (record != null && matches(record.getExteriorPosition(), world, pos)) {
+                    if (
+                        record != null
+                            && !record.isInFlight()
+                            && matches(record.getExteriorPosition(), world, pos)
+                    ) {
                         data.setExteriorPosition(tardisId, null);
                     }
                 }

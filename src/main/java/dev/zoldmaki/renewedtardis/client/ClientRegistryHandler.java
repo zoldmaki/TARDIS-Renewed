@@ -22,6 +22,7 @@ public final class ClientRegistryHandler {
         registerItemModel(ModItems.TARDIS_KEY);
         registerItemModel(Item.getItemFromBlock(ModBlocks.CHRONOSTEEL_BLOCK));
         registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_EXTERIOR));
+        registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_FLIGHT_CONSOLE));
     }
 
     private static void registerItemModel(Item item) {

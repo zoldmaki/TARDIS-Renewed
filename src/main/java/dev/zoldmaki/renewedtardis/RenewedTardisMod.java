@@ -1,9 +1,14 @@
 package dev.zoldmaki.renewedtardis;
 
 import dev.zoldmaki.renewedtardis.command.CommandTardisRenewed;
+import dev.zoldmaki.renewedtardis.config.TardisConfig;
+import dev.zoldmaki.renewedtardis.dimension.TardisDimensionManager;
 import dev.zoldmaki.renewedtardis.init.ModBlocks;
 import dev.zoldmaki.renewedtardis.init.ModItems;
+import dev.zoldmaki.renewedtardis.network.ModNetwork;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisExterior;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisFlightConsole;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisInteriorDoor;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -24,18 +29,34 @@ import org.apache.logging.log4j.Logger;
 public final class RenewedTardisMod {
     public static final String MOD_ID = "renewedtardis";
     public static final String NAME = "TARDIS Renewed";
-    public static final String VERSION = "0.4.0-alpha";
+    public static final String VERSION = "0.7.0-alpha";
 
     public static Logger logger;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         logger = event.getModLog();
+
+        TardisConfig.load(event.getSuggestedConfigurationFile());
+        TardisDimensionManager.register(TardisConfig.getInteriorDimensionId());
+        ModNetwork.registerMessages();
         GameRegistry.registerTileEntity(
             TileEntityTardisExterior.class,
             new ResourceLocation(MOD_ID, "tardis_exterior")
         );
-        logger.info("TARDIS Renewed Phase 3 pre-initialization started.");
+        GameRegistry.registerTileEntity(
+            TileEntityTardisInteriorDoor.class,
+            new ResourceLocation(MOD_ID, "tardis_interior_door")
+        );
+        GameRegistry.registerTileEntity(
+            TileEntityTardisFlightConsole.class,
+            new ResourceLocation(MOD_ID, "tardis_flight_console")
+        );
+
+        logger.info(
+            "TARDIS Renewed Phase 6 pre-initialization started with interior dimension {}.",
+            TardisDimensionManager.getDimensionId()
+        );
     }
 
     @Mod.EventHandler
@@ -43,7 +64,7 @@ public final class RenewedTardisMod {
         OreDictionary.registerOre("ingotChronosteel", ModItems.CHRONOSTEEL_INGOT);
         OreDictionary.registerOre("blockChronosteel", ModBlocks.CHRONOSTEEL_BLOCK);
 
-        logger.info("TARDIS Renewed Phase 3 loaded: persistent exterior links and key locking.");
+        logger.info("TARDIS Renewed Phase 6 loaded: deduplicated interactions and prototype flight state.");
     }
 
     @Mod.EventHandler

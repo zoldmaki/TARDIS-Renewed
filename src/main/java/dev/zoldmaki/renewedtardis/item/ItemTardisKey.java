@@ -3,7 +3,9 @@ package dev.zoldmaki.renewedtardis.item;
 import dev.zoldmaki.renewedtardis.RenewedTardisCreativeTab;
 import dev.zoldmaki.renewedtardis.RenewedTardisMod;
 import dev.zoldmaki.renewedtardis.data.TardisRecord;
+import dev.zoldmaki.renewedtardis.data.DimensionPosition;
 import dev.zoldmaki.renewedtardis.data.TardisWorldData;
+import dev.zoldmaki.renewedtardis.dimension.TardisDimensionManager;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -14,8 +16,10 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
@@ -103,6 +107,95 @@ public final class ItemTardisKey extends Item {
     }
 
     @Override
+    public EnumActionResult onItemUse(
+        EntityPlayer player,
+        World world,
+        BlockPos pos,
+        EnumHand hand,
+        EnumFacing facing,
+        float hitX,
+        float hitY,
+        float hitZ
+    ) {
+        if (!player.isSneaking()) {
+            return EnumActionResult.PASS;
+        }
+        if (world.isRemote) {
+            return EnumActionResult.SUCCESS;
+        }
+        if (!(player instanceof EntityPlayerMP) || player instanceof FakePlayer || world.getMinecraftServer() == null) {
+            return EnumActionResult.FAIL;
+        }
+        if (world.provider.getDimension() == TardisDimensionManager.getDimensionId()) {
+            player.sendStatusMessage(
+                new TextComponentString(
+                    TextFormatting.RED + "[TARDIS KEY] The exterior cannot land inside the TARDIS interior dimension."
+                ),
+                false
+            );
+            return EnumActionResult.FAIL;
+        }
+
+        ItemStack stack = player.getHeldItem(hand);
+        UUID tardisId = getTardisId(stack);
+        if (tardisId == null) {
+            player.sendStatusMessage(
+                new TextComponentString(
+                    TextFormatting.YELLOW + "[TARDIS KEY] Bind this key before setting a destination."
+                ),
+                false
+            );
+            return EnumActionResult.FAIL;
+        }
+
+        TardisWorldData data = TardisWorldData.get(world.getMinecraftServer());
+        TardisRecord record = data.getById(tardisId);
+        if (record == null) {
+            player.sendStatusMessage(
+                new TextComponentString(
+                    TextFormatting.RED + "[TARDIS KEY] This key points to a missing TARDIS record."
+                ),
+                false
+            );
+            return EnumActionResult.FAIL;
+        }
+
+        BlockPos target = pos.offset(facing);
+        if (target.getY() < 1 || target.getY() > 254) {
+            player.sendStatusMessage(
+                new TextComponentString(TextFormatting.RED + "[TARDIS KEY] That landing height is unsafe."),
+                false
+            );
+            return EnumActionResult.FAIL;
+        }
+        if (!world.isAirBlock(target) || !world.isAirBlock(target.up())) {
+            player.sendStatusMessage(
+                new TextComponentString(
+                    TextFormatting.RED + "[TARDIS KEY] The destination needs two clear blocks."
+                ),
+                false
+            );
+            return EnumActionResult.FAIL;
+        }
+
+        EnumFacing exteriorFacing = player.getHorizontalFacing().getOpposite();
+        data.setDestination(
+            record.getTardisId(),
+            new DimensionPosition(world.provider.getDimension(), target),
+            exteriorFacing
+        );
+        player.sendStatusMessage(
+            new TextComponentString(
+                TextFormatting.GOLD + "[TARDIS KEY] " + TextFormatting.RESET
+                    + "Destination set to dim " + world.provider.getDimension() + " @ "
+                    + target.getX() + ", " + target.getY() + ", " + target.getZ() + "."
+            ),
+            false
+        );
+        return EnumActionResult.SUCCESS;
+    }
+
+    @Override
     public void addInformation(
         ItemStack stack,
         @Nullable World world,
@@ -119,6 +212,7 @@ public final class ItemTardisKey extends Item {
         String ownerName = getOwnerName(stack);
         tooltip.add(TextFormatting.GRAY + "Owner: " + (ownerName.isEmpty() ? "Unknown" : ownerName));
         tooltip.add(TextFormatting.DARK_GRAY + "TARDIS: " + tardisId);
+        tooltip.add(TextFormatting.DARK_GRAY + "Sneak-right-click a block to set destination");
     }
 
     public static ItemStack createBoundKey(TardisRecord record) {

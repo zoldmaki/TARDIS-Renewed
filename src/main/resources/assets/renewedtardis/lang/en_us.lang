@@ -4,3 +4,5 @@ item.renewedtardis.chronosteel_ingot.name=Chronosteel Ingot
 item.renewedtardis.tardis_key.name=TARDIS Key
 tile.renewedtardis.chronosteel_block.name=Chronosteel Block
 tile.renewedtardis.tardis_exterior.name=TARDIS Exterior (Prototype)
+tile.renewedtardis.tardis_interior_door.name=TARDIS Interior Door (Prototype)
+tile.renewedtardis.tardis_flight_console.name=TARDIS Flight Console (Prototype)

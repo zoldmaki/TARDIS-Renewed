@@ -21,7 +21,9 @@ public final class CommonRegistryHandler {
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
         event.getRegistry().registerAll(
             ModBlocks.CHRONOSTEEL_BLOCK,
-            ModBlocks.TARDIS_EXTERIOR
+            ModBlocks.TARDIS_EXTERIOR,
+            ModBlocks.TARDIS_INTERIOR_DOOR,
+            ModBlocks.TARDIS_FLIGHT_CONSOLE
         );
     }
 
@@ -31,7 +33,8 @@ public final class CommonRegistryHandler {
             ModItems.CHRONOSTEEL_INGOT,
             ModItems.TARDIS_KEY,
             createItemBlock(ModBlocks.CHRONOSTEEL_BLOCK),
-            createItemBlock(ModBlocks.TARDIS_EXTERIOR)
+            createItemBlock(ModBlocks.TARDIS_EXTERIOR),
+            createItemBlock(ModBlocks.TARDIS_FLIGHT_CONSOLE)
         );
     }
 

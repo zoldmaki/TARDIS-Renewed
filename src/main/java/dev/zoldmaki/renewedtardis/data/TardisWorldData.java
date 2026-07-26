@@ -1,6 +1,8 @@
 package dev.zoldmaki.renewedtardis.data;
 
 import dev.zoldmaki.renewedtardis.RenewedTardisMod;
+import dev.zoldmaki.renewedtardis.dimension.InteriorAddress;
+import dev.zoldmaki.renewedtardis.dimension.TardisDimensionManager;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -10,6 +12,8 @@ import javax.annotation.Nullable;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldSavedData;
@@ -17,14 +21,15 @@ import net.minecraftforge.common.util.Constants;
 
 /**
  * Native 1.12.2 replacement for the original Darkcore-backed ownership data.
- * The data is stored in the overworld's MapStorage and therefore survives
- * normal saves, server restarts, and dimension unloads.
+ * The data is stored in the overworld's MapStorage and survives normal saves,
+ * server restarts, and unloading the shared interior dimension.
  */
 public final class TardisWorldData extends WorldSavedData {
     public static final String DATA_NAME = RenewedTardisMod.MOD_ID + "_tardis_registry";
-    private static final int DATA_VERSION = 1;
+    private static final int DATA_VERSION = 3;
 
     private final Map<UUID, TardisRecord> records = new LinkedHashMap<>();
+    private int nextInteriorIndex;
 
     public TardisWorldData() {
         this(DATA_NAME);
@@ -65,22 +70,30 @@ public final class TardisWorldData extends WorldSavedData {
             );
         }
 
+        int highestInteriorIndex = -1;
         NBTTagList recordList = nbt.getTagList("Records", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < recordList.tagCount(); i++) {
             try {
                 TardisRecord record = TardisRecord.readFromNBT(recordList.getCompoundTagAt(i));
                 records.put(record.getTardisId(), record);
+                highestInteriorIndex = Math.max(highestInteriorIndex, record.getInteriorIndex());
             } catch (RuntimeException exception) {
                 if (RenewedTardisMod.logger != null) {
                     RenewedTardisMod.logger.error("Skipped an invalid TARDIS registry entry while loading.", exception);
                 }
             }
         }
+
+        int savedNextIndex = nbt.hasKey("NextInteriorIndex", Constants.NBT.TAG_INT)
+            ? nbt.getInteger("NextInteriorIndex")
+            : 0;
+        nextInteriorIndex = Math.max(savedNextIndex, highestInteriorIndex + 1);
     }
 
     @Override
     public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
         nbt.setInteger("DataVersion", DATA_VERSION);
+        nbt.setInteger("NextInteriorIndex", nextInteriorIndex);
 
         NBTTagList recordList = new NBTTagList();
         for (TardisRecord record : records.values()) {
@@ -127,6 +140,32 @@ public final class TardisWorldData extends WorldSavedData {
         return created;
     }
 
+    /** Assigns one isolated cell in the shared TARDIS interior dimension. */
+    public DimensionPosition getOrCreateInterior(TardisRecord record) {
+        DimensionPosition existing = record.getInteriorPosition();
+        if (record.hasInterior() && existing != null) {
+            return existing;
+        }
+
+        int index = nextInteriorIndex++;
+        BlockPos center = InteriorAddress.getCenterForIndex(index);
+        DimensionPosition assigned = new DimensionPosition(TardisDimensionManager.getDimensionId(), center);
+        record.assignInterior(index, assigned);
+        markDirty();
+        return assigned;
+    }
+
+    public boolean setInteriorGenerated(UUID tardisId, boolean generated) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        record.setInteriorGenerated(generated);
+        markDirty();
+        return true;
+    }
+
+    /** Kept for early-save compatibility. */
     public boolean assignInteriorDimension(UUID tardisId, int dimensionId) {
         TardisRecord record = getById(tardisId);
         if (record == null) {
@@ -143,6 +182,67 @@ public final class TardisWorldData extends WorldSavedData {
             return false;
         }
         record.setExteriorPosition(position);
+        markDirty();
+        return true;
+    }
+
+    public boolean setExteriorLocked(UUID tardisId, boolean locked) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        record.setExteriorLocked(locked);
+        markDirty();
+        return true;
+    }
+
+    public boolean setDestination(UUID tardisId, DimensionPosition position, EnumFacing facing) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        record.setDestination(position, facing);
+        markDirty();
+        return true;
+    }
+
+    public boolean clearDestination(UUID tardisId) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        record.setDestination(null, EnumFacing.NORTH);
+        markDirty();
+        return true;
+    }
+
+    public boolean beginFlight(UUID tardisId, boolean exteriorLocked) {
+        TardisRecord record = getById(tardisId);
+        if (record == null || record.isInFlight() || record.getExteriorPosition() == null) {
+            return false;
+        }
+        record.setExteriorLocked(exteriorLocked);
+        record.beginFlight();
+        markDirty();
+        return true;
+    }
+
+    public boolean abortFlight(UUID tardisId) {
+        TardisRecord record = getById(tardisId);
+        if (record == null || !record.isInFlight()) {
+            return false;
+        }
+        record.abortFlight();
+        markDirty();
+        return true;
+    }
+
+    public boolean completeFlight(UUID tardisId, DimensionPosition landedPosition) {
+        TardisRecord record = getById(tardisId);
+        if (record == null || !record.isInFlight()) {
+            return false;
+        }
+        record.completeFlight(landedPosition);
         markDirty();
         return true;
     }

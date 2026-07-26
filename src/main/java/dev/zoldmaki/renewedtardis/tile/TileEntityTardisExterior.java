@@ -8,13 +8,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.Constants;
 
-/**
- * Persistent link between one placed exterior block and one TARDIS record.
- *
- * The Phase 3 exterior is deliberately a one-block prototype. The stored link
- * and lock state are intended to survive when the visual exterior is replaced
- * by a proper multi-block model later.
- */
+/** Persistent link between one placed exterior block and one TARDIS record. */
 public final class TileEntityTardisExterior extends TileEntity {
     private static final String TAG_TARDIS_ID = "TardisId";
     private static final String TAG_OWNER_ID = "OwnerId";
@@ -54,7 +48,7 @@ public final class TileEntityTardisExterior extends TileEntity {
         tardisId = record.getTardisId();
         ownerId = record.getOwnerId();
         ownerName = record.getOwnerName();
-        locked = true;
+        locked = record.isExteriorLocked();
         markChanged();
     }
 

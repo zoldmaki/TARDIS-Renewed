@@ -1,77 +1,96 @@
 # TARDIS Renewed porting status
 
-## Canonical legacy references
+## Fixed project baseline
 
-- TARDIS Mod 1.7.10: `0.995-350`
-- Darkcore 1.7.10: `0.41-179`
-- Target: Minecraft 1.12.2 / Forge `14.23.5.2847`
-- Mappings: `stable_39`
+- Legacy behavior reference: TARDIS Mod `1.7.10-0.995-350`
+- Darkcore behavior reference: `0.41-179`
+- Target: Minecraft Forge `1.12.2-14.23.5.2847`
 - Java: Eclipse Temurin 8
-- Legacy-world importing: intentionally out of scope
-
-## Stable project identity
-
+- ForgeGradle: `2.3-SNAPSHOT`
+- Mappings: `stable_39`
 - Public name: **TARDIS Renewed**
-- Mod ID / registry namespace: `renewedtardis`
-- Java package root: `dev.zoldmaki.renewedtardis`
-
-The mod ID should not be changed after public worlds begin using the mod.
+- Registry namespace: `renewedtardis`
+- Current version: `0.7.0-alpha`
+- Legacy-world import: intentionally out of scope
 
 ## Completed
 
-### Phase 0
+### Phase 0 — loading scaffold
 
-- ForgeGradle 2.3 loading scaffold
-- Java 8 build configuration
-- Mod metadata and logo
-- Legacy resource inventory
+- ForgeGradle project and Java 8 setup
+- Mod metadata, logo, legacy resource inventory
 
-### Phase 1
+### Phase 1 — registry foundation
 
 - Registry-event structure
-- Client-only item/block model registration
-- TARDIS Renewed creative tab
+- Creative tab
 - Chronosteel ingot and block
-- Sound-event placeholders using the legacy audio assets
+- Legacy sound-event registration
 
-### Phase 2
+### Phase 2 — persistent identity
 
-- Native global `WorldSavedData`
-- UUID-based TARDIS records and ownership
-- Persistent key binding
-- `/tardisrenewed` and `/tr` test commands
-- Reserved interior-dimension and exterior-position data
+- Overworld `WorldSavedData` registry
+- UUID-based TARDIS and owner records
+- Bound TARDIS key
+- Development command surface
 
-### Phase 3
+### Phase 3 — exterior foundation
 
-- Fixed TARDIS Key recipe JSON
-- Prototype TARDIS exterior block
-- Persistent exterior tile entity
-- Saved TARDIS-to-exterior links
-- Matching-key lock and unlock behavior
-- Safe `/tr exterior` placement and relocation command
-- Exterior position cleanup when the linked block is broken
+- Persistent prototype exterior tile entity
+- Key binding and lock state
+- Safe debug placement and relocation
 
-## Current version
+### Phase 4 — interior dimension
 
-`0.4.0-alpha`
+- Shared empty interior dimension
+- Persistent, widely separated interior cells
+- Prototype room generation
+- Two-way exterior/interior teleportation
+- Existing Phase 2–3 data preserved
 
-## Current architectural boundary
+### Phase 5 — multiplayer and configuration hardening
 
-The Phase 3 exterior is a one-block functional prototype, not a commitment to
-the final exterior shape. The important stable pieces are the TARDIS UUID,
-owner UUID, exterior location, and lock state.
+- Configurable shared interior dimension ID
+- Existing-record/config mismatch detection
+- Exterior placement forbidden from inside the TARDIS dimension
+- Narrowly scoped client-to-server interaction packet
+- Non-operator lock, unlock, entry, and exit support near protected spawn
+- Stronger first-generation lighting updates
 
-The next major architectural decision is the interior layout strategy:
+### Phase 6 — flight-state foundation
 
-1. one dynamically registered dimension per TARDIS, close to the original mod;
-2. one shared TARDIS dimension with widely separated interior regions.
+- Server-side duplicate interaction suppression for custom-packet plus vanilla activation pairs
+- Persistent `LANDED` and `IN FLIGHT` state
+- Persistent departure, destination, landing facing, and exterior lock state
+- Bound-key destination selection by sneak-right-clicking a block
+- Crosshair and explicit-coordinate destination commands
+- Temporary owner-controlled flight console added to new and existing interiors
+- Server-authoritative exterior dematerialization and materialization
+- Exit-door lockout while in flight
+- Restart-safe in-flight recovery and obstructed-landing refusal
+- Takeoff and landing debug/recovery commands
 
-The choice should be made before implementing real entry teleportation because
-it affects save structure, chunk loading, recovery tools, and future features.
+## Architectural decisions
 
-## Next recommended phase
+- One shared dimension contains isolated TARDIS interior cells.
+- Interior cells are separated by 2,048 blocks.
+- The default dimension ID is 1212 but can be changed before world creation.
+- A changed dimension ID does not migrate old interiors; mismatches fail clearly.
+- Darkcore is not a runtime dependency. Required behavior is replaced internally.
+- TARDIS block interactions are server-authoritative and narrowly validated.
+- One physical click may arrive through both vanilla and the custom protected-block path; server-side deduplication prevents double activation.
+- During flight, the current exterior position is cleared while the departure and destination remain recoverable in persistent data.
+- Visual prototype blocks may later be replaced without changing persistent identity or flight records.
 
-Phase 4 should establish the interior dimension skeleton, safe teleportation,
-a return location, and recovery commands. It should use a deliberately simple
-test room before importing schemas or console mechanics.
+## Next planned phase
+
+Phase 7 should strengthen flight and exterior recovery before detailed rendering:
+
+- controlled flight duration rather than instant second-click landing
+- basic coordinate/dimension validation rules and safe landing search
+- flight progress and state synchronization for clients
+- handling players joining or logging out while inside an in-flight TARDIS
+- owner/guest permission groundwork
+- exterior recovery command for missing or corrupted placements
+
+Energy, damage, instability, animated console controls, chameleon forms, and advanced navigation should remain later milestones until the flight state machine passes multiplayer and restart testing.
