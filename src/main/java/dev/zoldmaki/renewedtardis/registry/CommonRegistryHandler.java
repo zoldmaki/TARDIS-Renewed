@@ -22,8 +22,14 @@ public final class CommonRegistryHandler {
         event.getRegistry().registerAll(
             ModBlocks.CHRONOSTEEL_BLOCK,
             ModBlocks.TARDIS_EXTERIOR,
+            ModBlocks.TARDIS_EXTERIOR_TOP,
             ModBlocks.TARDIS_INTERIOR_DOOR,
-            ModBlocks.TARDIS_FLIGHT_CONSOLE
+            ModBlocks.TARDIS_FLIGHT_CONSOLE,
+            ModBlocks.TARDIS_TAKEOFF_CONTROL,
+            ModBlocks.TARDIS_LANDING_CONTROL,
+            ModBlocks.TARDIS_DESTINATION_CONTROL,
+            ModBlocks.TARDIS_FACING_CONTROL,
+            ModBlocks.TARDIS_STATUS_CONTROL
         );
     }
 
@@ -34,7 +40,12 @@ public final class CommonRegistryHandler {
             ModItems.TARDIS_KEY,
             createItemBlock(ModBlocks.CHRONOSTEEL_BLOCK),
             createItemBlock(ModBlocks.TARDIS_EXTERIOR),
-            createItemBlock(ModBlocks.TARDIS_FLIGHT_CONSOLE)
+            createItemBlock(ModBlocks.TARDIS_FLIGHT_CONSOLE),
+            createItemBlock(ModBlocks.TARDIS_TAKEOFF_CONTROL),
+            createItemBlock(ModBlocks.TARDIS_LANDING_CONTROL),
+            createItemBlock(ModBlocks.TARDIS_DESTINATION_CONTROL),
+            createItemBlock(ModBlocks.TARDIS_FACING_CONTROL),
+            createItemBlock(ModBlocks.TARDIS_STATUS_CONTROL)
         );
     }
 

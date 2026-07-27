@@ -59,7 +59,28 @@ public final class InteriorAddress {
         return center.add(0, 1, 5);
     }
 
+    /** Legacy combined Phase 6-8 control, retained for existing worlds. */
     public static BlockPos getFlightConsolePosition(BlockPos center) {
         return center.add(0, 1, 0);
+    }
+
+    public static BlockPos getTakeoffControlPosition(BlockPos center) {
+        return center.add(-2, 1, 0);
+    }
+
+    public static BlockPos getLandingControlPosition(BlockPos center) {
+        return center.add(2, 1, 0);
+    }
+
+    public static BlockPos getDestinationControlPosition(BlockPos center) {
+        return center.add(0, 1, -2);
+    }
+
+    public static BlockPos getFacingControlPosition(BlockPos center) {
+        return center.add(-2, 1, -2);
+    }
+
+    public static BlockPos getStatusControlPosition(BlockPos center) {
+        return center.add(2, 1, -2);
     }
 }

@@ -82,11 +82,7 @@ public final class MessageActivateTardisBlock implements IMessage {
 
         IBlockState state = world.getBlockState(pos);
         Block block = state.getBlock();
-        if (
-            block != ModBlocks.TARDIS_EXTERIOR
-                && block != ModBlocks.TARDIS_INTERIOR_DOOR
-                && block != ModBlocks.TARDIS_FLIGHT_CONSOLE
-        ) {
+        if (!ModBlocks.isTardisInteractionBlock(block)) {
             return;
         }
 

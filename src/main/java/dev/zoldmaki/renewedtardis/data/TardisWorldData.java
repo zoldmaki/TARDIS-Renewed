@@ -3,6 +3,7 @@ package dev.zoldmaki.renewedtardis.data;
 import dev.zoldmaki.renewedtardis.RenewedTardisMod;
 import dev.zoldmaki.renewedtardis.dimension.InteriorAddress;
 import dev.zoldmaki.renewedtardis.dimension.TardisDimensionManager;
+import dev.zoldmaki.renewedtardis.exterior.ExteriorShell;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -26,7 +27,7 @@ import net.minecraftforge.common.util.Constants;
  */
 public final class TardisWorldData extends WorldSavedData {
     public static final String DATA_NAME = RenewedTardisMod.MOD_ID + "_tardis_registry";
-    private static final int DATA_VERSION = 3;
+    private static final int DATA_VERSION = 5;
 
     private final Map<UUID, TardisRecord> records = new LinkedHashMap<>();
     private int nextInteriorIndex;
@@ -119,6 +120,40 @@ public final class TardisWorldData extends WorldSavedData {
         return null;
     }
 
+    /** Finds a record by its last saved owner name, case-insensitively. */
+    @Nullable
+    public TardisRecord getByOwnerName(String ownerName) {
+        if (ownerName == null) {
+            return null;
+        }
+        for (TardisRecord record : records.values()) {
+            if (record.getOwnerName().equalsIgnoreCase(ownerName)) {
+                return record;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Transfers an existing record without changing its TARDIS UUID, interior,
+     * exterior, destination, lock state, or flight state.
+     */
+    public boolean transferOwnership(UUID tardisId, UUID newOwnerId, String newOwnerName) {
+        TardisRecord record = getById(tardisId);
+        if (record == null || newOwnerId == null) {
+            return false;
+        }
+
+        TardisRecord conflicting = getByOwner(newOwnerId);
+        if (conflicting != null && !conflicting.getTardisId().equals(tardisId)) {
+            return false;
+        }
+
+        record.transferOwnership(newOwnerId, newOwnerName);
+        markDirty();
+        return true;
+    }
+
     public TardisRecord getOrCreateForOwner(UUID ownerId, String ownerName) {
         TardisRecord existing = getByOwner(ownerId);
         if (existing != null) {
@@ -196,6 +231,16 @@ public final class TardisWorldData extends WorldSavedData {
         return true;
     }
 
+    public boolean setExteriorShell(UUID tardisId, ExteriorShell shell) {
+        TardisRecord record = getById(tardisId);
+        if (record == null || shell == null) {
+            return false;
+        }
+        record.setExteriorShell(shell);
+        markDirty();
+        return true;
+    }
+
     public boolean setDestination(UUID tardisId, DimensionPosition position, EnumFacing facing) {
         TardisRecord record = getById(tardisId);
         if (record == null) {
@@ -216,13 +261,19 @@ public final class TardisWorldData extends WorldSavedData {
         return true;
     }
 
-    public boolean beginFlight(UUID tardisId, boolean exteriorLocked) {
+    public boolean beginFlight(
+        UUID tardisId,
+        boolean exteriorLocked,
+        long startedAtMillis,
+        long readyAtMillis,
+        EnumFacing departureFacing
+    ) {
         TardisRecord record = getById(tardisId);
         if (record == null || record.isInFlight() || record.getExteriorPosition() == null) {
             return false;
         }
         record.setExteriorLocked(exteriorLocked);
-        record.beginFlight();
+        record.beginFlight(startedAtMillis, readyAtMillis, departureFacing);
         markDirty();
         return true;
     }

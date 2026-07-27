@@ -26,11 +26,7 @@ public final class ClientTardisInteractionHandler {
         }
 
         Block block = event.getWorld().getBlockState(event.getPos()).getBlock();
-        if (
-            block != ModBlocks.TARDIS_EXTERIOR
-                && block != ModBlocks.TARDIS_INTERIOR_DOOR
-                && block != ModBlocks.TARDIS_FLIGHT_CONSOLE
-        ) {
+        if (!ModBlocks.isTardisInteractionBlock(block)) {
             return;
         }
 

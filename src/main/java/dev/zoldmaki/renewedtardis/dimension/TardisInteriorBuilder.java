@@ -1,9 +1,11 @@
 package dev.zoldmaki.renewedtardis.dimension;
 
+import dev.zoldmaki.renewedtardis.block.BlockTardisConsoleControl;
 import dev.zoldmaki.renewedtardis.data.DimensionPosition;
 import dev.zoldmaki.renewedtardis.data.TardisRecord;
 import dev.zoldmaki.renewedtardis.data.TardisWorldData;
 import dev.zoldmaki.renewedtardis.init.ModBlocks;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisConsoleControl;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisFlightConsole;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisInteriorDoor;
 import net.minecraft.block.state.IBlockState;
@@ -30,7 +32,37 @@ public final class TardisInteriorBuilder {
         }
 
         ensureAndBindDoor(world, InteriorAddress.getDoorPosition(center), record);
-        ensureAndBindConsole(world, InteriorAddress.getFlightConsolePosition(center), record);
+        ensureAndBindLegacyConsole(world, InteriorAddress.getFlightConsolePosition(center), record);
+        ensureAndBindControl(
+            world,
+            InteriorAddress.getTakeoffControlPosition(center),
+            ModBlocks.TARDIS_TAKEOFF_CONTROL,
+            record
+        );
+        ensureAndBindControl(
+            world,
+            InteriorAddress.getLandingControlPosition(center),
+            ModBlocks.TARDIS_LANDING_CONTROL,
+            record
+        );
+        ensureAndBindControl(
+            world,
+            InteriorAddress.getDestinationControlPosition(center),
+            ModBlocks.TARDIS_DESTINATION_CONTROL,
+            record
+        );
+        ensureAndBindControl(
+            world,
+            InteriorAddress.getFacingControlPosition(center),
+            ModBlocks.TARDIS_FACING_CONTROL,
+            record
+        );
+        ensureAndBindControl(
+            world,
+            InteriorAddress.getStatusControlPosition(center),
+            ModBlocks.TARDIS_STATUS_CONTROL,
+            record
+        );
     }
 
     private static void buildRoom(WorldServer world, BlockPos center) {
@@ -75,6 +107,31 @@ public final class TardisInteriorBuilder {
             ModBlocks.TARDIS_FLIGHT_CONSOLE.getDefaultState(),
             3
         );
+        world.setBlockState(
+            InteriorAddress.getTakeoffControlPosition(center),
+            ModBlocks.TARDIS_TAKEOFF_CONTROL.getDefaultState(),
+            3
+        );
+        world.setBlockState(
+            InteriorAddress.getLandingControlPosition(center),
+            ModBlocks.TARDIS_LANDING_CONTROL.getDefaultState(),
+            3
+        );
+        world.setBlockState(
+            InteriorAddress.getDestinationControlPosition(center),
+            ModBlocks.TARDIS_DESTINATION_CONTROL.getDefaultState(),
+            3
+        );
+        world.setBlockState(
+            InteriorAddress.getFacingControlPosition(center),
+            ModBlocks.TARDIS_FACING_CONTROL.getDefaultState(),
+            3
+        );
+        world.setBlockState(
+            InteriorAddress.getStatusControlPosition(center),
+            ModBlocks.TARDIS_STATUS_CONTROL.getDefaultState(),
+            3
+        );
     }
 
     private static void ensureAndBindDoor(WorldServer world, BlockPos doorPos, TardisRecord record) {
@@ -89,15 +146,32 @@ public final class TardisInteriorBuilder {
         ((TileEntityTardisInteriorDoor) tile).bind(record.getTardisId());
     }
 
-    private static void ensureAndBindConsole(WorldServer world, BlockPos consolePos, TardisRecord record) {
+    private static void ensureAndBindLegacyConsole(WorldServer world, BlockPos consolePos, TardisRecord record) {
         if (world.getBlockState(consolePos).getBlock() != ModBlocks.TARDIS_FLIGHT_CONSOLE) {
             world.setBlockState(consolePos, ModBlocks.TARDIS_FLIGHT_CONSOLE.getDefaultState(), 3);
         }
 
         TileEntity tile = world.getTileEntity(consolePos);
         if (!(tile instanceof TileEntityTardisFlightConsole)) {
-            throw new IllegalStateException("The generated TARDIS flight console has no tile entity");
+            throw new IllegalStateException("The generated legacy TARDIS flight console has no tile entity");
         }
         ((TileEntityTardisFlightConsole) tile).bind(record.getTardisId());
+    }
+
+    private static void ensureAndBindControl(
+        WorldServer world,
+        BlockPos controlPos,
+        BlockTardisConsoleControl control,
+        TardisRecord record
+    ) {
+        if (world.getBlockState(controlPos).getBlock() != control) {
+            world.setBlockState(controlPos, control.getDefaultState(), 3);
+        }
+
+        TileEntity tile = world.getTileEntity(controlPos);
+        if (!(tile instanceof TileEntityTardisConsoleControl)) {
+            throw new IllegalStateException("A generated TARDIS console control has no tile entity");
+        }
+        ((TileEntityTardisConsoleControl) tile).bind(record.getTardisId());
     }
 }

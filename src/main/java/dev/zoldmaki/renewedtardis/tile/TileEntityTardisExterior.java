@@ -1,6 +1,9 @@
 package dev.zoldmaki.renewedtardis.tile;
 
+import dev.zoldmaki.renewedtardis.block.BlockTardisExterior;
 import dev.zoldmaki.renewedtardis.data.TardisRecord;
+import dev.zoldmaki.renewedtardis.data.TardisWorldData;
+import dev.zoldmaki.renewedtardis.init.ModBlocks;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.block.state.IBlockState;
@@ -58,6 +61,29 @@ public final class TileEntityTardisExterior extends TileEntity {
         }
         this.locked = locked;
         markChanged();
+    }
+
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (world == null || world.isRemote) {
+            return;
+        }
+
+        IBlockState state = world.getBlockState(pos);
+        if (state.getBlock() != ModBlocks.TARDIS_EXTERIOR) {
+            return;
+        }
+
+        TardisRecord record = null;
+        if (tardisId != null && world.getMinecraftServer() != null) {
+            record = TardisWorldData.get(world.getMinecraftServer()).getById(tardisId);
+        }
+        if (record != null) {
+            state = state.withProperty(BlockTardisExterior.SHELL, record.getExteriorShell());
+        }
+        BlockTardisExterior.synchronizeStructure(world, pos, state);
     }
 
     @Override

@@ -23,6 +23,11 @@ public final class ClientRegistryHandler {
         registerItemModel(Item.getItemFromBlock(ModBlocks.CHRONOSTEEL_BLOCK));
         registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_EXTERIOR));
         registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_FLIGHT_CONSOLE));
+        registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_TAKEOFF_CONTROL));
+        registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_LANDING_CONTROL));
+        registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_DESTINATION_CONTROL));
+        registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_FACING_CONTROL));
+        registerItemModel(Item.getItemFromBlock(ModBlocks.TARDIS_STATUS_CONTROL));
     }
 
     private static void registerItemModel(Item item) {

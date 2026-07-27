@@ -6,6 +6,7 @@ import dev.zoldmaki.renewedtardis.dimension.TardisDimensionManager;
 import dev.zoldmaki.renewedtardis.init.ModBlocks;
 import dev.zoldmaki.renewedtardis.init.ModItems;
 import dev.zoldmaki.renewedtardis.network.ModNetwork;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisConsoleControl;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisExterior;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisFlightConsole;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisInteriorDoor;
@@ -29,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 public final class RenewedTardisMod {
     public static final String MOD_ID = "renewedtardis";
     public static final String NAME = "TARDIS Renewed";
-    public static final String VERSION = "0.7.0-alpha";
+    public static final String VERSION = "0.11.0-alpha";
 
     public static Logger logger;
 
@@ -52,9 +53,13 @@ public final class RenewedTardisMod {
             TileEntityTardisFlightConsole.class,
             new ResourceLocation(MOD_ID, "tardis_flight_console")
         );
+        GameRegistry.registerTileEntity(
+            TileEntityTardisConsoleControl.class,
+            new ResourceLocation(MOD_ID, "tardis_console_control")
+        );
 
         logger.info(
-            "TARDIS Renewed Phase 6 pre-initialization started with interior dimension {}.",
+            "TARDIS Renewed Phase 10 pre-initialization started with interior dimension {}.",
             TardisDimensionManager.getDimensionId()
         );
     }
@@ -64,7 +69,7 @@ public final class RenewedTardisMod {
         OreDictionary.registerOre("ingotChronosteel", ModItems.CHRONOSTEEL_INGOT);
         OreDictionary.registerOre("blockChronosteel", ModBlocks.CHRONOSTEEL_BLOCK);
 
-        logger.info("TARDIS Renewed Phase 6 loaded: deduplicated interactions and prototype flight state.");
+        logger.info("TARDIS Renewed Phase 10 loaded: two-block exterior shells, front-door interaction, and chameleon foundation.");
     }
 
     @Mod.EventHandler

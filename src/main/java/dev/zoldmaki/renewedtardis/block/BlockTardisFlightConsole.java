@@ -109,10 +109,11 @@ public final class BlockTardisFlightConsole extends Block {
 
     private static void showStatus(EntityPlayer player, TardisRecord record) {
         DimensionPosition destination = record.getDestinationPosition();
+        long now = System.currentTimeMillis();
         send(
             player,
             TextFormatting.AQUA,
-            "Flight state: " + (record.isInFlight() ? "IN FLIGHT" : "LANDED")
+            "Flight state: " + TardisFlightService.describeFlightProgress(record, now)
                 + "; destination: " + (destination == null ? "not set" : destination.toString()) + "."
         );
     }

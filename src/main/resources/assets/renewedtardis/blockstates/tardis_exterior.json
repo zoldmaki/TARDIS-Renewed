@@ -1,8 +1,13 @@
 {
   "variants": {
-    "facing=north": { "model": "renewedtardis:tardis_exterior" },
-    "facing=east":  { "model": "renewedtardis:tardis_exterior", "y": 90 },
-    "facing=south": { "model": "renewedtardis:tardis_exterior", "y": 180 },
-    "facing=west":  { "model": "renewedtardis:tardis_exterior", "y": 270 }
+    "facing=north,shell=prototype":  { "model": "renewedtardis:tardis_exterior_prototype_lower" },
+    "facing=east,shell=prototype":   { "model": "renewedtardis:tardis_exterior_prototype_lower", "y": 90 },
+    "facing=south,shell=prototype":  { "model": "renewedtardis:tardis_exterior_prototype_lower", "y": 180 },
+    "facing=west,shell=prototype":   { "model": "renewedtardis:tardis_exterior_prototype_lower", "y": 270 },
+
+    "facing=north,shell=police_box": { "model": "renewedtardis:tardis_exterior_police_lower" },
+    "facing=east,shell=police_box":  { "model": "renewedtardis:tardis_exterior_police_lower", "y": 90 },
+    "facing=south,shell=police_box": { "model": "renewedtardis:tardis_exterior_police_lower", "y": 180 },
+    "facing=west,shell=police_box":  { "model": "renewedtardis:tardis_exterior_police_lower", "y": 270 }
   }
 }

@@ -1,3 +1,6 @@
 {
-  "parent": "renewedtardis:block/tardis_exterior"
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "renewedtardis:items/tardis_exterior_police_box"
+  }
 }
