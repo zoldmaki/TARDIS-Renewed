@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "C",
+    "R",
+    "I"
+  ],
+  "key": {
+    "C": {
+      "item": "renewedtardis:chronosteel_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "item": "renewedtardis:sonic_screwdriver"
+  }
+}

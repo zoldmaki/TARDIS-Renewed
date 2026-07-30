@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CQC",
+    "PEP",
+    "CQC"
+  ],
+  "key": {
+    "C": { "item": "renewedtardis:chronosteel_ingot" },
+    "Q": { "item": "minecraft:quartz" },
+    "P": { "item": "minecraft:ender_pearl" },
+    "E": { "item": "minecraft:emerald" }
+  },
+  "result": { "item": "renewedtardis:room_upgrade" }
+}

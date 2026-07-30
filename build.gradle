@@ -14,7 +14,7 @@ buildscript {
 
 apply plugin: 'net.minecraftforge.gradle.forge'
 
-version = '0.11.0-alpha'
+version = '0.21.0-alpha'
 group = 'dev.zoldmaki.renewedtardis'
 archivesBaseName = 'TARDIS-Renewed'
 
@@ -34,6 +34,21 @@ minecraft {
 dependencies {
     // Darkcore 0.41-179 remains a behavior/source reference only.
     // TARDIS Renewed replaces the Darkcore features it needs internally.
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/compat/java'
+        }
+    }
+}
+
+jar {
+    // Compile-only compatibility surfaces. The real APIs are supplied by the
+    // optional mods and must never be bundled into TARDIS Renewed.
+    exclude 'mcp/mobius/waila/api/**'
 }
 
 processResources {

@@ -5,9 +5,12 @@ import dev.zoldmaki.renewedtardis.data.DimensionPosition;
 import dev.zoldmaki.renewedtardis.data.TardisRecord;
 import dev.zoldmaki.renewedtardis.data.TardisWorldData;
 import dev.zoldmaki.renewedtardis.init.ModBlocks;
+import dev.zoldmaki.renewedtardis.interior.InteriorRoomManager;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisConsoleControl;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisEngineCore;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisFlightConsole;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisInteriorDoor;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisTransmatPad;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
@@ -63,6 +66,9 @@ public final class TardisInteriorBuilder {
             ModBlocks.TARDIS_STATUS_CONTROL,
             record
         );
+        ensureAndBindEngineCore(world, InteriorAddress.getEngineCorePosition(center), record);
+        ensureAndBindTransmat(world, data, center, record);
+        InteriorRoomManager.ensureGeneratedRooms(world, data, record);
     }
 
     private static void buildRoom(WorldServer world, BlockPos center) {
@@ -132,6 +138,16 @@ public final class TardisInteriorBuilder {
             ModBlocks.TARDIS_STATUS_CONTROL.getDefaultState(),
             3
         );
+        world.setBlockState(
+            InteriorAddress.getEngineCorePosition(center),
+            ModBlocks.TARDIS_ENGINE_CORE.getDefaultState(),
+            3
+        );
+        world.setBlockState(
+            InteriorAddress.getTransmatPosition(center),
+            ModBlocks.TARDIS_TRANSMAT_PAD.getDefaultState(),
+            3
+        );
     }
 
     private static void ensureAndBindDoor(WorldServer world, BlockPos doorPos, TardisRecord record) {
@@ -156,6 +172,52 @@ public final class TardisInteriorBuilder {
             throw new IllegalStateException("The generated legacy TARDIS flight console has no tile entity");
         }
         ((TileEntityTardisFlightConsole) tile).bind(record.getTardisId());
+    }
+
+    private static void ensureAndBindEngineCore(WorldServer world, BlockPos corePos, TardisRecord record) {
+        if (world.getBlockState(corePos).getBlock() != ModBlocks.TARDIS_ENGINE_CORE) {
+            world.setBlockState(corePos, ModBlocks.TARDIS_ENGINE_CORE.getDefaultState(), 3);
+        }
+
+        TileEntity tile = world.getTileEntity(corePos);
+        if (!(tile instanceof TileEntityTardisEngineCore)) {
+            throw new IllegalStateException("The generated TARDIS engine core has no tile entity");
+        }
+        ((TileEntityTardisEngineCore) tile).bind(record.getTardisId());
+    }
+
+
+    private static void ensureAndBindTransmat(
+        WorldServer world,
+        TardisWorldData data,
+        BlockPos center,
+        TardisRecord record
+    ) {
+        DimensionPosition saved = record.getTransmatPosition();
+        BlockPos defaultPos = InteriorAddress.getTransmatPosition(center);
+        BlockPos padPos = defaultPos;
+        if (saved != null
+            && saved.getDimension() == world.provider.getDimension()
+            && world.getBlockState(saved.getPosition()).getBlock() == ModBlocks.TARDIS_TRANSMAT_PAD) {
+            padPos = saved.getPosition();
+        }
+
+        if (world.getBlockState(padPos).getBlock() != ModBlocks.TARDIS_TRANSMAT_PAD) {
+            world.setBlockState(padPos, ModBlocks.TARDIS_TRANSMAT_PAD.getDefaultState(), 3);
+        }
+        TileEntity tile = world.getTileEntity(padPos);
+        if (!(tile instanceof TileEntityTardisTransmatPad)) {
+            throw new IllegalStateException("The generated TARDIS transmat pad has no tile entity");
+        }
+        ((TileEntityTardisTransmatPad) tile).bind(record.getTardisId());
+        if (saved == null
+            || saved.getDimension() != world.provider.getDimension()
+            || !saved.getPosition().equals(padPos)) {
+            data.setTransmatPosition(
+                record.getTardisId(),
+                new DimensionPosition(world.provider.getDimension(), padPos)
+            );
+        }
     }
 
     private static void ensureAndBindControl(

@@ -39,37 +39,57 @@ Separate destination, facing, takeoff, landing, and status controls with reusabl
 ### Phase 10 — exterior model and chameleon foundation
 Two-block exterior structure, collision and front-door behavior, door sounds, persistent shell IDs, prototype/police-box shells, and operator-aware shell commands.
 
-## Planned gameplay systems
+## Completed interior expansion foundation
 
 ### Phase 11 — interior schema and room management
-Move beyond the fixed test room: schema definitions, room placement/removal, protected core area, door connectors, and safe interior expansion.
+Persistent room records, protected console room, reusable schema definitions, cardinal room grid, parent/child connectors, generated corridors, safe leaf-room removal, occupant protection, room teleportation, operator management, and first basic/workshop/storage schemas.
+
+## Completed energy foundation
 
 ### Phase 12 — Artron energy and engine core
-Persistent energy capacity/usage/regeneration, flight costs, engine/core blocks, charging rules, and operator recovery commands.
+Persistent per-TARDIS capacity and charge, restart-safe regeneration, transactional flight and room costs, prototype engine core, status integration, configuration, and operator recovery commands.
 
-### Phase 13 — advanced flight
-Coordinate controls, flight accuracy, speed modifiers, randomization, dimension restrictions, flight events, and improved console feedback.
+## Completed advanced-flight foundation
 
-### Phase 14 — damage, instability, and repair
-Subsystem health, flight faults, exterior/interior damage, repair mechanics, emergency states, and safeguards against unrecoverable records.
+### Phase 13 — advanced flight and materialization handling
+Materialization occupant capture, persistent speed and accuracy profiles, restart-safe resolved landing targets, horizontal drift, dimension restrictions, Forge flight events, and improved status feedback.
+
+## Completed damage foundation
+
+### Phase 14 — damage, instability, repair, and config GUI
+Forge Mods-menu configuration, persistent engine/navigation/stabilizer/dematerialization health, deterministic flight wear, energy/time/drift penalties, critical takeoff safeguards, Chronosteel repair, diagnostics, and operator recovery.
+
+## Completed upgrade foundation
 
 ### Phase 15 — upgrades and components
-Upgrade inventory, component framework, speed/energy/room/protection upgrades, crafting progression, and balancing configuration.
+Persistent component slots, five craftable upgrade types, engine-core installation,
+flight/energy/room/protection effects, balancing configuration, status integration,
+and operator recovery commands.
+
+## Completed multiplayer permissions foundation
 
 ### Phase 16 — permissions and multiplayer crew
-Owner/guest permission lists, lock modes, console permissions, key permissions, ownership recovery, and crew-friendly command handling.
+Persistent UUID-based crew lists, owner/crew/public exterior access modes, separate door/key/console/maintenance privileges, bound crew-key issuing, operator recovery, tab completion, and permission-aware physical interactions.
+
+## Completed sonic foundation
 
 ### Phase 17 — sonic screwdriver
-Sonic item state, exterior/door interaction, block/entity actions, permissions, sounds, models, and extensible action registration.
+Persistent item linking and modes, ownership/crew-aware TARDIS actions, exterior/interior-door lock reconfiguration, location reporting, recall, block/entity schematic scans, sonic sound/model/recipe, and public block/entity action registration points.
 
-### Phase 18 — additional legacy mechanics
-Schemas/manual, transmat, gravity lift, decorative systems, special blocks, and other legacy features selected by priority.
+## Completed legacy-mechanics foundation
+
+### Phase 18 — additional legacy mechanics and room-graph expansion
+Persistent secondary corridor links between already-adjacent rooms, safe connection removal, an interior/exterior Artron transmat with sonic mode, paired gravity lifts, and a lightweight in-game TARDIS manual. Decorative blocks, richer schema tooling, and additional legacy systems remain candidates for later polish.
+
+## Completed optional-integration foundation
 
 ### Phase 19 — optional mod integrations
-Separate optional integrations for supported 1.12.2 APIs such as Waila/HWYLA, ComputerCraft, AE2, energy systems, and other chosen mods. No bundled third-party API classes.
+Restart-configurable HWYLA/Waila component tooltips, a reflection-only read-only ComputerCraft/CC:Tweaked engine-core peripheral, integration diagnostics, compile-only API isolation, and reliable server-authoritative gravity-lift level activation/teleportation. Broader AE2, energy, and other mod-specific hooks remain candidates after core stabilization.
 
-### Phase 20 — polish, compatibility, and release stabilization
-Final assets and GUIs, configuration cleanup, performance/chunk-loading review, dedicated-server soak tests, recovery tools, documentation, recipes, balancing, and save-format freeze for beta/release.
+## Completed stabilization foundation
+
+### Phase 20 — diagnostics, recovery, and release stabilization foundation
+Record-only and deep world diagnostics, safe/destructive exterior recovery, registered interior-component recovery, maintenance configuration, release documentation, known-limitations tracking, and a candidate save-format freeze. Final assets, survival balance, optional-integration verification, real two-player testing, and dedicated-server soak testing remain release-candidate work rather than a new numbered feature phase.
 
 ## Deliberately outside scope
 

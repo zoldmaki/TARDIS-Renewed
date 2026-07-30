@@ -2,6 +2,7 @@ package dev.zoldmaki.renewedtardis.block;
 
 import dev.zoldmaki.renewedtardis.RenewedTardisCreativeTab;
 import dev.zoldmaki.renewedtardis.RenewedTardisMod;
+import dev.zoldmaki.renewedtardis.access.TardisAccessService;
 import dev.zoldmaki.renewedtardis.data.DimensionPosition;
 import dev.zoldmaki.renewedtardis.data.TardisRecord;
 import dev.zoldmaki.renewedtardis.data.TardisWorldData;
@@ -188,6 +189,14 @@ public final class BlockTardisExterior extends Block {
             send(player, TextFormatting.YELLOW, "The TARDIS is currently in flight.");
             return true;
         }
+        if (!TardisAccessService.canEnter(player, record)) {
+            send(
+                player,
+                TextFormatting.RED,
+                "Access denied. This TARDIS currently allows " + record.getAccessMode().getDisplayName() + "."
+            );
+            return true;
+        }
 
         world.playSound(null, pos, SoundEvents.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 0.75F, 0.9F);
         TardisTeleportService.enterInterior((EntityPlayerMP) player, record);
@@ -227,6 +236,10 @@ public final class BlockTardisExterior extends Block {
         }
 
         if (!exterior.isBound()) {
+            if (!TardisAccessService.isOwner(player, record) && !TardisAccessService.isOperator(player)) {
+                send(player, TextFormatting.RED, "Only the TARDIS owner or an operator can bind a new exterior.");
+                return true;
+            }
             DimensionPosition existingPosition = record.getExteriorPosition();
             if (existingPosition != null && !matches(existingPosition, world, pos)) {
                 send(
@@ -253,6 +266,11 @@ public final class BlockTardisExterior extends Block {
         if (!keyTardisId.equals(exterior.getTardisId())) {
             world.playSound(null, pos, ModSounds.LOCKED, SoundCategory.BLOCKS, 0.8F, 0.9F);
             send(player, TextFormatting.RED, "This key does not belong to that TARDIS.");
+            return true;
+        }
+        if (!TardisAccessService.canUseKey(player, record)) {
+            world.playSound(null, pos, ModSounds.LOCKED, SoundCategory.BLOCKS, 0.8F, 0.9F);
+            send(player, TextFormatting.RED, "You do not have key permission for this TARDIS.");
             return true;
         }
 

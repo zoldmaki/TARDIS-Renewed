@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "up=true": { "model": "renewedtardis:gravity_lift" },
+    "up=false": { "model": "renewedtardis:gravity_lift" }
+  }
+}

@@ -2,6 +2,8 @@ package dev.zoldmaki.renewedtardis.item;
 
 import dev.zoldmaki.renewedtardis.RenewedTardisCreativeTab;
 import dev.zoldmaki.renewedtardis.RenewedTardisMod;
+import dev.zoldmaki.renewedtardis.access.TardisAccessService;
+import dev.zoldmaki.renewedtardis.config.TardisConfig;
 import dev.zoldmaki.renewedtardis.data.TardisRecord;
 import dev.zoldmaki.renewedtardis.data.DimensionPosition;
 import dev.zoldmaki.renewedtardis.data.TardisWorldData;
@@ -158,6 +160,43 @@ public final class ItemTardisKey extends Item {
                 false
             );
             return EnumActionResult.FAIL;
+        }
+        if (!TardisAccessService.canUseKey(player, record)) {
+            player.sendStatusMessage(
+                new TextComponentString(
+                    TextFormatting.RED + "[TARDIS KEY] You do not have key permission for this TARDIS."
+                ),
+                false
+            );
+            return EnumActionResult.FAIL;
+        }
+
+        int destinationDimension = world.provider.getDimension();
+        if (TardisConfig.isDestinationDimensionBlocked(destinationDimension)) {
+            player.sendStatusMessage(
+                new TextComponentString(
+                    TextFormatting.RED + "[TARDIS KEY] Dimension " + destinationDimension
+                        + " is blocked by the TARDIS flight config."
+                ),
+                false
+            );
+            return EnumActionResult.FAIL;
+        }
+        DimensionPosition departure = record.isInFlight()
+            ? record.getFlightDeparture()
+            : record.getExteriorPosition();
+        if (departure != null) {
+            String restriction = TardisConfig.describeFlightRestriction(
+                departure.getDimension(),
+                destinationDimension
+            );
+            if (!restriction.isEmpty()) {
+                player.sendStatusMessage(
+                    new TextComponentString(TextFormatting.RED + "[TARDIS KEY] " + restriction),
+                    false
+                );
+                return EnumActionResult.FAIL;
+            }
         }
 
         BlockPos target = pos.offset(facing);

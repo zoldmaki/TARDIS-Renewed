@@ -12,3 +12,76 @@ tile.renewedtardis.tardis_landing_control.name=TARDIS Landing Control (Prototype
 tile.renewedtardis.tardis_destination_control.name=TARDIS Destination Control (Prototype)
 tile.renewedtardis.tardis_facing_control.name=TARDIS Facing Control (Prototype)
 tile.renewedtardis.tardis_status_control.name=TARDIS Status Control (Prototype)
+
+tile.renewedtardis.tardis_engine_core.name=TARDIS Engine Core (Prototype)
+
+# Configuration GUI
+renewedtardis.config.category.dimensions=Dimensions
+renewedtardis.config.category.flight=Flight and Navigation
+renewedtardis.config.category.artron_energy=Artron Energy
+renewedtardis.config.category.damage=Damage and Repair
+renewedtardis.config.tardisInteriorDimensionId=TARDIS Interior Dimension ID
+renewedtardis.config.tardisInteriorDimensionId.tooltip=Startup-only setting. Changing it after interiors exist is highly unrecommended and can make them inaccessible.
+renewedtardis.config.minimumFlightSeconds=Minimum Flight Seconds
+renewedtardis.config.maximumFlightSeconds=Maximum Flight Seconds
+renewedtardis.config.blocksPerExtraSecond=Blocks per Extra Second
+renewedtardis.config.crossDimensionPenaltySeconds=Cross-Dimension Time Penalty
+renewedtardis.config.safeLandingSearchRadius=Safe Landing Search Radius
+renewedtardis.config.allowCrossDimensionFlight=Allow Cross-Dimension Flight
+renewedtardis.config.blockedDestinationDimensions=Blocked Destination Dimensions
+renewedtardis.config.blockedDestinationDimensions.tooltip=Open the list editor and add one integer dimension ID per row, for example -1 for the Nether or 1 for the End.
+renewedtardis.config.defaultCapacity=Default Artron Capacity
+renewedtardis.config.startingEnergy=Starting Artron Energy
+renewedtardis.config.regenerationPerSecond=Artron Regeneration per Second
+renewedtardis.config.baseFlightCost=Base Flight Cost
+renewedtardis.config.blocksPerExtraFlightEnergy=Blocks per Extra Flight Energy
+renewedtardis.config.crossDimensionFlightCost=Cross-Dimension Flight Cost
+renewedtardis.config.basicRoomCost=Basic Room Cost
+renewedtardis.config.workshopRoomCost=Workshop Room Cost
+renewedtardis.config.storageRoomCost=Storage Room Cost
+renewedtardis.config.damage.enabled=Enable Damage System
+renewedtardis.config.damage.baseWearPerFlight=Base Wear per Flight
+renewedtardis.config.damage.fastFlightExtraWear=Fast Flight Extra Wear
+renewedtardis.config.damage.riskyFlightExtraWear=Risky Accuracy Extra Wear
+renewedtardis.config.damage.crossDimensionExtraWear=Cross-Dimension Extra Wear
+renewedtardis.config.damage.criticalHealthThreshold=Critical Health Threshold
+renewedtardis.config.damage.repairPerChronosteel=Repair per Chronosteel
+renewedtardis.config.damage.engineEnergyPenaltyAtZeroHealthPercent=Maximum Engine Energy Penalty
+renewedtardis.config.damage.stabilizerDurationPenaltyAtZeroHealthPercent=Maximum Stabilizer Time Penalty
+renewedtardis.config.damage.maximumNavigationDamageDriftRadius=Maximum Damage Drift Radius
+
+# Upgrade components
+item.renewedtardis.speed_upgrade.name=Temporal Accelerator
+item.renewedtardis.artron_capacity_upgrade.name=Artron Capacitor
+item.renewedtardis.artron_regeneration_upgrade.name=Artron Regenerator
+item.renewedtardis.room_upgrade.name=Architectural Expansion
+item.renewedtardis.protection_upgrade.name=Temporal Shielding
+
+renewedtardis.config.category.upgrades=Upgrades and Components
+renewedtardis.config.upgrades.slotCount=Upgrade Slot Count
+renewedtardis.config.upgrades.maximumSpeedUpgrades=Maximum Speed Upgrades
+renewedtardis.config.upgrades.maximumCapacityUpgrades=Maximum Capacity Upgrades
+renewedtardis.config.upgrades.maximumRegenerationUpgrades=Maximum Regeneration Upgrades
+renewedtardis.config.upgrades.maximumRoomUpgrades=Maximum Room Upgrades
+renewedtardis.config.upgrades.maximumProtectionUpgrades=Maximum Protection Upgrades
+renewedtardis.config.upgrades.speedDurationReductionPercentPerUpgrade=Flight Time Reduction per Accelerator
+renewedtardis.config.upgrades.capacityBonusPerUpgrade=Capacity Bonus per Capacitor
+renewedtardis.config.upgrades.regenerationBonusPerUpgrade=Regeneration Bonus per Regenerator
+renewedtardis.config.upgrades.baseExpandableRoomLimit=Base Expandable Room Limit
+renewedtardis.config.upgrades.roomLimitBonusPerUpgrade=Room Limit Bonus per Expansion
+renewedtardis.config.upgrades.roomCostReductionPercentPerUpgrade=Room Cost Reduction per Expansion
+renewedtardis.config.upgrades.protectionWearReductionPercentPerUpgrade=Wear Reduction per Shielding Upgrade
+
+# Sonic screwdriver
+item.renewedtardis.sonic_screwdriver.name=Sonic Screwdriver
+
+# Phase 18 legacy mechanics
+tile.renewedtardis.tardis_transmat_pad.name=TARDIS Transmat Pad
+tile.renewedtardis.gravity_lift.name=Gravity Lift
+item.renewedtardis.tardis_manual.name=TARDIS Manual
+renewedtardis.config.category.integrations=Optional Integrations
+renewedtardis.config.integrations.enableHwylaIntegration=Enable HWYLA/Waila Tooltips
+renewedtardis.config.integrations.enableComputerCraftIntegration=Enable ComputerCraft Peripheral
+renewedtardis.config.category.maintenance=Diagnostics and Recovery
+renewedtardis.config.maintenance.maximumDoctorMessages=Maximum Doctor Messages
+renewedtardis.config.maintenance.logSuccessfulRepairs=Log Successful Repairs

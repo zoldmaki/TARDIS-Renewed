@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CRC",
+    "RKR",
+    "CRC"
+  ],
+  "key": {
+    "C": { "item": "renewedtardis:chronosteel_ingot" },
+    "R": { "item": "minecraft:redstone" },
+    "K": { "item": "minecraft:clock" }
+  },
+  "result": { "item": "renewedtardis:speed_upgrade" }
+}

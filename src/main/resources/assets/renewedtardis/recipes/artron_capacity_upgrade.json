@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CDC",
+    "RBR",
+    "CCC"
+  ],
+  "key": {
+    "C": { "item": "renewedtardis:chronosteel_ingot" },
+    "D": { "item": "minecraft:diamond" },
+    "R": { "item": "minecraft:redstone" },
+    "B": { "item": "minecraft:redstone_block" }
+  },
+  "result": { "item": "renewedtardis:artron_capacity_upgrade" }
+}

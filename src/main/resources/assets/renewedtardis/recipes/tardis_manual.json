@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:book" },
+    { "item": "renewedtardis:chronosteel_ingot" }
+  ],
+  "result": { "item": "renewedtardis:tardis_manual" }
+}

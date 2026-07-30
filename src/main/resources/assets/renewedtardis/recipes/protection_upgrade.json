@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "OCO",
+    "CDC",
+    "OCO"
+  ],
+  "key": {
+    "O": { "item": "minecraft:obsidian" },
+    "C": { "item": "renewedtardis:chronosteel_ingot" },
+    "D": { "item": "minecraft:diamond" }
+  },
+  "result": { "item": "renewedtardis:protection_upgrade" }
+}

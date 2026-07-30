@@ -83,4 +83,12 @@ public final class InteriorAddress {
     public static BlockPos getStatusControlPosition(BlockPos center) {
         return center.add(2, 1, -2);
     }
+
+    public static BlockPos getEngineCorePosition(BlockPos center) {
+        return center.add(4, 1, -4);
+    }
+
+    public static BlockPos getTransmatPosition(BlockPos center) {
+        return center.add(-4, 1, -4);
+    }
 }

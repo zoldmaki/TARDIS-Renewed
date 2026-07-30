@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["QRQ", "ICI", "QRQ"],
+  "key": {
+    "Q": { "item": "minecraft:quartz_block" },
+    "R": { "item": "minecraft:redstone" },
+    "I": { "item": "minecraft:iron_ingot" },
+    "C": { "item": "renewedtardis:chronosteel_ingot" }
+  },
+  "result": { "item": "renewedtardis:tardis_transmat_pad" }
+}

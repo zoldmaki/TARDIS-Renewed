@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_bottom_top",
+  "textures": {
+    "top": "renewedtardis:blocks/gravity_lift_top",
+    "bottom": "renewedtardis:blocks/gravity_lift_side",
+    "side": "renewedtardis:blocks/gravity_lift_side"
+  }
+}

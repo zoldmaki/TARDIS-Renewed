@@ -9,6 +9,7 @@ import dev.zoldmaki.renewedtardis.dimension.InteriorAddress;
 import dev.zoldmaki.renewedtardis.dimension.TardisDimensionManager;
 import dev.zoldmaki.renewedtardis.dimension.TardisInteriorBuilder;
 import dev.zoldmaki.renewedtardis.init.ModBlocks;
+import dev.zoldmaki.renewedtardis.interior.InteriorRoomManager;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
@@ -54,7 +55,7 @@ public final class TardisTeleportService {
             TardisInteriorBuilder.ensureGenerated(interiorWorld, data, record);
 
             BlockPos entry = InteriorAddress.getEntryPosition(address.getPosition());
-            teleport(player, interiorWorld, entry, 180.0F, 0.0F);
+            teleportPlayer(player, interiorWorld, entry, 180.0F, 0.0F);
             send(player, TextFormatting.AQUA, "You step into your TARDIS interior.");
             return true;
         } catch (RuntimeException exception) {
@@ -65,6 +66,99 @@ public final class TardisTeleportService {
                 exception
             );
             send(player, TextFormatting.RED, "The TARDIS interior could not be opened. Check the server log.");
+            return false;
+        }
+    }
+
+    /**
+     * Moves a player intersecting the exterior materialization volume into the
+     * linked console room. This intentionally ignores ownership and lock state:
+     * it is a collision-safety action, not a normal door interaction.
+     */
+    public static boolean moveMaterializationOccupantIntoInterior(
+        EntityPlayerMP player,
+        TardisRecord record
+    ) {
+        MinecraftServer server = player.getServer();
+        if (server == null) {
+            return false;
+        }
+
+        try {
+            TardisWorldData data = TardisWorldData.get(server);
+            DimensionPosition address = data.getOrCreateInterior(record);
+            int configuredDimension = TardisDimensionManager.getDimensionId();
+            if (address.getDimension() != configuredDimension) {
+                send(
+                    player,
+                    TextFormatting.RED,
+                    "A materializing TARDIS tried to move you into an interior assigned to dimension "
+                        + address.getDimension() + ", but the config currently uses " + configuredDimension + "."
+                );
+                return false;
+            }
+
+            WorldServer interiorWorld = TardisDimensionManager.getOrLoadWorld(server);
+            TardisInteriorBuilder.ensureGenerated(interiorWorld, data, record);
+            BlockPos entry = InteriorAddress.getEntryPosition(address.getPosition());
+            teleportPlayer(player, interiorWorld, entry, 180.0F, 0.0F);
+            send(
+                player,
+                TextFormatting.LIGHT_PURPLE,
+                "The materializing TARDIS pulls you safely into its interior."
+            );
+            return true;
+        } catch (RuntimeException exception) {
+            RenewedTardisMod.logger.error(
+                "Failed to move materialization occupant {} into TARDIS {}.",
+                player.getName(),
+                record.getTardisId(),
+                exception
+            );
+            send(
+                player,
+                TextFormatting.RED,
+                "The TARDIS could not move you out of its materialization volume. Check the server log."
+            );
+            return false;
+        }
+    }
+
+    public static boolean teleportToInteriorRoom(EntityPlayerMP player, TardisRecord record, int roomId) {
+        MinecraftServer server = player.getServer();
+        if (server == null) {
+            return false;
+        }
+
+        try {
+            TardisWorldData data = TardisWorldData.get(server);
+            DimensionPosition address = data.getOrCreateInterior(record);
+            int configuredDimension = TardisDimensionManager.getDimensionId();
+            if (address.getDimension() != configuredDimension) {
+                send(
+                    player,
+                    TextFormatting.RED,
+                    "This interior belongs to dimension " + address.getDimension()
+                        + ", but the config currently uses " + configuredDimension + "."
+                );
+                return false;
+            }
+
+            WorldServer interiorWorld = TardisDimensionManager.getOrLoadWorld(server);
+            TardisInteriorBuilder.ensureGenerated(interiorWorld, data, record);
+            BlockPos target = InteriorRoomManager.getRoomTeleportPosition(record, roomId);
+            teleportPlayer(player, interiorWorld, target, 180.0F, 0.0F);
+            send(player, TextFormatting.AQUA, "Moved to interior room " + roomId + ".");
+            return true;
+        } catch (RuntimeException exception) {
+            RenewedTardisMod.logger.error(
+                "Failed to move player {} to room {} in TARDIS {}.",
+                player.getName(),
+                roomId,
+                record.getTardisId(),
+                exception
+            );
+            send(player, TextFormatting.RED, "The requested interior room could not be opened. Check the server log.");
             return false;
         }
     }
@@ -96,13 +190,13 @@ public final class TardisTeleportService {
 
         IBlockState state = exteriorWorld.getBlockState(exteriorPos);
         EnumFacing front = state.getValue(BlockTardisExterior.FACING);
-        BlockPos exit = findSafeExit(exteriorWorld, exteriorPos, front);
-        teleport(player, exteriorWorld, exit, front.getHorizontalAngle(), 0.0F);
+        BlockPos exit = findSafeExteriorExit(exteriorWorld, exteriorPos, front);
+        teleportPlayer(player, exteriorWorld, exit, front.getHorizontalAngle(), 0.0F);
         send(player, TextFormatting.AQUA, "You step out of the TARDIS.");
         return true;
     }
 
-    private static BlockPos findSafeExit(WorldServer world, BlockPos exterior, EnumFacing front) {
+    public static BlockPos findSafeExteriorExit(WorldServer world, BlockPos exterior, EnumFacing front) {
         BlockPos[] candidates = new BlockPos[] {
             exterior.offset(front),
             exterior.offset(front, 2),
@@ -119,7 +213,7 @@ public final class TardisTeleportService {
         return exterior.up();
     }
 
-    private static void teleport(
+    public static void teleportPlayer(
         EntityPlayerMP player,
         WorldServer targetWorld,
         BlockPos target,

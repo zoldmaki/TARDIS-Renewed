@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CGC",
+    "GEG",
+    "CGC"
+  ],
+  "key": {
+    "C": { "item": "renewedtardis:chronosteel_ingot" },
+    "G": { "item": "minecraft:glowstone_dust" },
+    "E": { "item": "minecraft:emerald" }
+  },
+  "result": { "item": "renewedtardis:artron_regeneration_upgrade" }
+}

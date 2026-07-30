@@ -2,11 +2,15 @@ package dev.zoldmaki.renewedtardis.block;
 
 import dev.zoldmaki.renewedtardis.RenewedTardisCreativeTab;
 import dev.zoldmaki.renewedtardis.RenewedTardisMod;
+import dev.zoldmaki.renewedtardis.access.TardisAccessService;
 import dev.zoldmaki.renewedtardis.data.DimensionPosition;
 import dev.zoldmaki.renewedtardis.data.TardisRecord;
 import dev.zoldmaki.renewedtardis.data.TardisWorldData;
+import dev.zoldmaki.renewedtardis.damage.TardisDamageService;
 import dev.zoldmaki.renewedtardis.flight.TardisFlightService;
+import dev.zoldmaki.renewedtardis.energy.TardisEnergyService;
 import dev.zoldmaki.renewedtardis.interaction.TardisInteractionGuard;
+import dev.zoldmaki.renewedtardis.upgrade.TardisUpgradeService;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisConsoleControl;
 import java.util.UUID;
 import net.minecraft.block.Block;
@@ -107,11 +111,10 @@ public final class BlockTardisConsoleControl extends Block {
         }
 
         EntityPlayerMP serverPlayer = (EntityPlayerMP) player;
-        if (
-            !record.getOwnerId().equals(serverPlayer.getUniqueID())
-                && !serverPlayer.canUseCommand(2, "tardisrenewed")
-        ) {
-            send(player, TextFormatting.RED, "Only this TARDIS's owner can use its prototype controls.");
+        boolean statusOnly = controlType == ControlType.STATUS
+            || (controlType == ControlType.TAKEOFF && player.isSneaking());
+        if (!statusOnly && !TardisAccessService.canUseConsole(serverPlayer, record)) {
+            send(player, TextFormatting.RED, "You do not have console permission for this TARDIS.");
             return true;
         }
 
@@ -227,9 +230,12 @@ public final class BlockTardisConsoleControl extends Block {
             player,
             TextFormatting.AQUA,
             "Flight: " + TardisFlightService.describeFlightProgress(record, now)
+                + "; " + TardisFlightService.describeFlightProfile(record)
                 + "; exterior: " + (exterior == null ? "not placed" : exterior.toString())
                 + (record.isExteriorLocked() ? " (locked)" : " (unlocked)")
-                + "; shell: " + record.getExteriorShell().getName() + "."
+                + "; shell: " + record.getExteriorShell().getName()
+                + "; access: " + record.getAccessMode().getName()
+                + " (" + record.getCrew().size() + " crew)."
         );
         send(
             player,
@@ -238,6 +244,20 @@ public final class BlockTardisConsoleControl extends Block {
                 ? "not set."
                 : destination.toString() + " facing " + record.getDestinationFacing().getName() + ".")
         );
+        if (record.isInFlight() && record.getFlightResolvedDestination() != null) {
+            send(
+                player,
+                TextFormatting.AQUA,
+                "Resolved landing target: " + record.getFlightResolvedDestination().toString() + "."
+            );
+        }
+        if (player.world.getMinecraftServer() != null) {
+            TardisWorldData data = TardisWorldData.get(player.world.getMinecraftServer());
+            TardisEnergyService.refresh(data, record);
+            send(player, TextFormatting.AQUA, "Artron energy: " + TardisEnergyService.describe(record)
+                + "; systems: " + TardisDamageService.describe(record)
+                + "; upgrades: " + TardisUpgradeService.describe(record) + ".");
+        }
     }
 
     private static void send(EntityPlayer player, TextFormatting color, String text) {
