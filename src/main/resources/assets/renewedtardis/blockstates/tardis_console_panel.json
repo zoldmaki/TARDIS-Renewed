@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "renewedtardis:tardis_console_panel", "y": 180 },
+    "facing=south": { "model": "renewedtardis:tardis_console_panel", "y": 0 },
+    "facing=west":  { "model": "renewedtardis:tardis_console_panel", "y": 270 },
+    "facing=east":  { "model": "renewedtardis:tardis_console_panel", "y": 90 }
+  }
+}

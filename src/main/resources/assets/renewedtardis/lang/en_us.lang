@@ -85,3 +85,6 @@ renewedtardis.config.integrations.enableComputerCraftIntegration=Enable Computer
 renewedtardis.config.category.maintenance=Diagnostics and Recovery
 renewedtardis.config.maintenance.maximumDoctorMessages=Maximum Doctor Messages
 renewedtardis.config.maintenance.logSuccessfulRepairs=Log Successful Repairs
+
+# Phase 21 physical console foundation
+tile.renewedtardis.tardis_console_panel.name=Prototype TARDIS Console Panel

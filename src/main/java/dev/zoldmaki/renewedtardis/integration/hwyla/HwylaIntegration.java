@@ -2,6 +2,7 @@ package dev.zoldmaki.renewedtardis.integration.hwyla;
 
 import dev.zoldmaki.renewedtardis.block.BlockGravityLift;
 import dev.zoldmaki.renewedtardis.block.BlockTardisConsoleControl;
+import dev.zoldmaki.renewedtardis.block.BlockTardisConsolePanel;
 import dev.zoldmaki.renewedtardis.block.BlockTardisEngineCore;
 import dev.zoldmaki.renewedtardis.block.BlockTardisExterior;
 import dev.zoldmaki.renewedtardis.block.BlockTardisFlightConsole;
@@ -14,6 +15,7 @@ import dev.zoldmaki.renewedtardis.data.TardisWorldData;
 import dev.zoldmaki.renewedtardis.energy.TardisEnergyService;
 import dev.zoldmaki.renewedtardis.tile.TileEntityGravityLift;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisConsoleControl;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisConsolePanel;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisEngineCore;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisExterior;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisFlightConsole;
@@ -51,6 +53,7 @@ public final class HwylaIntegration implements IWailaDataProvider {
     private static final String TAG_LOWEST_SYSTEM = "TRLowestSystem";
     private static final String TAG_LOWEST_HEALTH = "TRLowestHealth";
     private static final String TAG_LIFT_UP = "TRLiftUp";
+    private static final String TAG_PANEL = "TRPanel";
 
     private static final HwylaIntegration INSTANCE = new HwylaIntegration();
 
@@ -63,6 +66,7 @@ public final class HwylaIntegration implements IWailaDataProvider {
         registrar.registerBodyProvider(INSTANCE, BlockTardisInteriorDoor.class);
         registrar.registerBodyProvider(INSTANCE, BlockTardisFlightConsole.class);
         registrar.registerBodyProvider(INSTANCE, BlockTardisConsoleControl.class);
+        registrar.registerBodyProvider(INSTANCE, BlockTardisConsolePanel.class);
         registrar.registerBodyProvider(INSTANCE, BlockTardisEngineCore.class);
         registrar.registerBodyProvider(INSTANCE, BlockTardisTransmatPad.class);
         registrar.registerBodyProvider(INSTANCE, BlockGravityLift.class);
@@ -71,6 +75,7 @@ public final class HwylaIntegration implements IWailaDataProvider {
         registrar.registerNBTProvider(INSTANCE, TileEntityTardisInteriorDoor.class);
         registrar.registerNBTProvider(INSTANCE, TileEntityTardisFlightConsole.class);
         registrar.registerNBTProvider(INSTANCE, TileEntityTardisConsoleControl.class);
+        registrar.registerNBTProvider(INSTANCE, TileEntityTardisConsolePanel.class);
         registrar.registerNBTProvider(INSTANCE, TileEntityTardisEngineCore.class);
         registrar.registerNBTProvider(INSTANCE, TileEntityTardisTransmatPad.class);
         registrar.registerNBTProvider(INSTANCE, TileEntityGravityLift.class);
@@ -131,7 +136,12 @@ public final class HwylaIntegration implements IWailaDataProvider {
             );
         }
 
-        if ("exterior".equals(kind)) {
+        if ("console_panel".equals(kind)) {
+            currentTip.add(
+                TextFormatting.AQUA + "Panel: " + TextFormatting.WHITE + tag.getString(TAG_PANEL)
+            );
+            currentTip.add(TextFormatting.DARK_GRAY + "Physical placeholder hit regions active");
+        } else if ("exterior".equals(kind)) {
             currentTip.add(
                 TextFormatting.AQUA + "Door: " + TextFormatting.WHITE
                     + (tag.getBoolean(TAG_LOCKED) ? "locked" : "unlocked")
@@ -203,6 +213,16 @@ public final class HwylaIntegration implements IWailaDataProvider {
         result.setString(TAG_STATE, record.isInFlight() ? "in flight" : "landed");
         result.setInteger(TAG_PROGRESS, record.getFlightProgressPercent(System.currentTimeMillis()));
 
+        if (tileEntity instanceof TileEntityTardisConsolePanel) {
+            IBlockState state = world.getBlockState(pos);
+            if (state.getBlock() instanceof BlockTardisConsolePanel) {
+                net.minecraft.util.EnumFacing facing = state.getValue(BlockTardisConsolePanel.FACING);
+                dev.zoldmaki.renewedtardis.console.ConsolePanel panel =
+                    dev.zoldmaki.renewedtardis.console.ConsolePanel.fromFacing(facing);
+                result.setString(TAG_PANEL, panel == null ? "unknown" : panel.getDisplayName());
+            }
+        }
+
         if (tileEntity instanceof TileEntityTardisExterior) {
             result.setBoolean(TAG_LOCKED, record.isExteriorLocked());
             result.setString(TAG_SHELL, record.getExteriorShell().getDisplayName());
@@ -231,6 +251,9 @@ public final class HwylaIntegration implements IWailaDataProvider {
         if (tileEntity instanceof TileEntityTardisConsoleControl) {
             return "console_control";
         }
+        if (tileEntity instanceof TileEntityTardisConsolePanel) {
+            return "console_panel";
+        }
         if (tileEntity instanceof TileEntityTardisEngineCore) {
             return "engine_core";
         }
@@ -256,6 +279,9 @@ public final class HwylaIntegration implements IWailaDataProvider {
         }
         if (tileEntity instanceof TileEntityTardisConsoleControl) {
             return ((TileEntityTardisConsoleControl) tileEntity).getTardisId();
+        }
+        if (tileEntity instanceof TileEntityTardisConsolePanel) {
+            return ((TileEntityTardisConsolePanel) tileEntity).getTardisId();
         }
         if (tileEntity instanceof TileEntityTardisEngineCore) {
             return ((TileEntityTardisEngineCore) tileEntity).getTardisId();

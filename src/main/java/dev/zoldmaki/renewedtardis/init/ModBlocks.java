@@ -3,6 +3,7 @@ package dev.zoldmaki.renewedtardis.init;
 import dev.zoldmaki.renewedtardis.block.BlockChronosteel;
 import dev.zoldmaki.renewedtardis.block.BlockGravityLift;
 import dev.zoldmaki.renewedtardis.block.BlockTardisConsoleControl;
+import dev.zoldmaki.renewedtardis.block.BlockTardisConsolePanel;
 import dev.zoldmaki.renewedtardis.block.BlockTardisExterior;
 import dev.zoldmaki.renewedtardis.block.BlockTardisExteriorTop;
 import dev.zoldmaki.renewedtardis.block.BlockTardisEngineCore;
@@ -19,6 +20,7 @@ public final class ModBlocks {
     public static final BlockTardisEngineCore TARDIS_ENGINE_CORE = new BlockTardisEngineCore();
     public static final BlockTardisTransmatPad TARDIS_TRANSMAT_PAD = new BlockTardisTransmatPad();
     public static final BlockGravityLift GRAVITY_LIFT = new BlockGravityLift();
+    public static final BlockTardisConsolePanel TARDIS_CONSOLE_PANEL = new BlockTardisConsolePanel();
 
     /** Retained for save compatibility with Phase 6-8 prototype interiors. */
     public static final BlockTardisFlightConsole TARDIS_FLIGHT_CONSOLE = new BlockTardisFlightConsole();
@@ -52,6 +54,7 @@ public final class ModBlocks {
             || block == TARDIS_EXTERIOR_TOP
             || block == TARDIS_INTERIOR_DOOR
             || block == TARDIS_FLIGHT_CONSOLE
+            || block == TARDIS_CONSOLE_PANEL
             || block == TARDIS_TAKEOFF_CONTROL
             || block == TARDIS_LANDING_CONTROL
             || block == TARDIS_DESTINATION_CONTROL

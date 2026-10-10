@@ -27,6 +27,7 @@ public final class CommonRegistryHandler {
             ModBlocks.TARDIS_ENGINE_CORE,
             ModBlocks.TARDIS_TRANSMAT_PAD,
             ModBlocks.GRAVITY_LIFT,
+            ModBlocks.TARDIS_CONSOLE_PANEL,
             ModBlocks.TARDIS_FLIGHT_CONSOLE,
             ModBlocks.TARDIS_TAKEOFF_CONTROL,
             ModBlocks.TARDIS_LANDING_CONTROL,

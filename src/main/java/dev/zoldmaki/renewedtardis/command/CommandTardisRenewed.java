@@ -369,6 +369,11 @@ public final class CommandTardisRenewed extends CommandBase {
                 + ", " + TardisFlightService.describeFlightProfile(record)
         ));
         sender.sendMessage(new TextComponentString(
+            TextFormatting.AQUA + "Console: " + TextFormatting.WHITE
+                + "takeoff sequence " + record.getConsoleState().getTakeoffSequenceProgress() + "/4, "
+                + record.getConsoleState().getSavedStates().size() + " non-default physical control state(s)"
+        ));
+        sender.sendMessage(new TextComponentString(
             TextFormatting.AQUA + "Exterior: " + TextFormatting.WHITE
                 + (record.getExteriorPosition() == null ? "not currently placed" : record.getExteriorPosition().toString())
                 + ", shell=" + record.getExteriorShell().getName()
@@ -611,8 +616,9 @@ public final class CommandTardisRenewed extends CommandBase {
                 throw new WrongUsageException("/tr flight target");
             }
             DimensionPosition target = record.isInFlight()
-                ? record.getFlightResolvedDestination()
-                : record.getDestinationPosition();
+                && record.getFlightResolvedDestination() != null
+                    ? record.getFlightResolvedDestination()
+                    : record.getDestinationPosition();
             sender.sendMessage(new TextComponentString(
                 TextFormatting.AQUA + "Flight target: " + TextFormatting.WHITE
                     + (target == null ? "not set" : target.toString())
@@ -743,13 +749,21 @@ public final class CommandTardisRenewed extends CommandBase {
         boolean force = false;
 
         if (remaining > 2) {
-            throw new WrongUsageException("/tr land [exact|nearest|departure] [force]");
+            throw new WrongUsageException("/tr land [exact|surface|solid|nearest|departure] [force]");
         }
         for (int index = firstArgument; index < args.length; index++) {
             String token = args[index].toLowerCase(Locale.ROOT);
             switch (token) {
                 case "exact":
                     mode = TardisFlightService.LandingMode.EXACT;
+                    break;
+                case "surface":
+                case "top":
+                    mode = TardisFlightService.LandingMode.SURFACE;
+                    break;
+                case "solid":
+                case "ground":
+                    mode = TardisFlightService.LandingMode.NEAREST_SOLID;
                     break;
                 case "nearest":
                 case "safe":
@@ -763,7 +777,7 @@ public final class CommandTardisRenewed extends CommandBase {
                     force = true;
                     break;
                 default:
-                    throw new WrongUsageException("/tr land [exact|nearest|departure] [force]");
+                    throw new WrongUsageException("/tr land [exact|surface|solid|nearest|departure] [force]");
             }
         }
 
@@ -2732,7 +2746,7 @@ public final class CommandTardisRenewed extends CommandBase {
         if (remaining == 1) {
             return getListOfStringsMatchingLastWord(
                 args,
-                Arrays.asList("exact", "nearest", "departure", "force")
+                Arrays.asList("exact", "surface", "solid", "nearest", "departure", "force")
             );
         }
         if (remaining == 2) {

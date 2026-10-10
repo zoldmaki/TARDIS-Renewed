@@ -1,0 +1,21 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "panel": "renewedtardis:blocks/tardis_flight_console",
+    "particle": "renewedtardis:blocks/tardis_flight_console"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 12, 16],
+      "faces": {
+        "down":  { "texture": "#panel", "cullface": "down" },
+        "up":    { "texture": "#panel" },
+        "north": { "texture": "#panel" },
+        "south": { "texture": "#panel" },
+        "west":  { "texture": "#panel" },
+        "east":  { "texture": "#panel" }
+      }
+    }
+  ]
+}

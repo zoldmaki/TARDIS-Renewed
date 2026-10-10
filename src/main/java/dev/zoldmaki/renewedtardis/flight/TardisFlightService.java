@@ -3,6 +3,8 @@ package dev.zoldmaki.renewedtardis.flight;
 import dev.zoldmaki.renewedtardis.RenewedTardisMod;
 import dev.zoldmaki.renewedtardis.block.BlockTardisExterior;
 import dev.zoldmaki.renewedtardis.config.TardisConfig;
+import dev.zoldmaki.renewedtardis.console.ConsoleControlId;
+import dev.zoldmaki.renewedtardis.console.TardisNavigationConsoleService;
 import dev.zoldmaki.renewedtardis.data.DimensionPosition;
 import dev.zoldmaki.renewedtardis.data.TardisRecord;
 import dev.zoldmaki.renewedtardis.data.TardisWorldData;
@@ -18,6 +20,7 @@ import dev.zoldmaki.renewedtardis.tile.TileEntityTardisExterior;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
@@ -36,6 +39,9 @@ import net.minecraftforge.common.MinecraftForge;
 public final class TardisFlightService {
     public enum LandingMode {
         EXACT,
+        SURFACE,
+        NEAREST_SOLID,
+        /** Legacy command mode retained for compatibility with /tr land nearest. */
         NEAREST_SAFE,
         DEPARTURE
     }
@@ -53,16 +59,17 @@ public final class TardisFlightService {
             return false;
         }
 
+        boolean coordinated = record.isCoordinatedDriveMode();
         DimensionPosition destination = record.getDestinationPosition();
-        if (destination == null) {
+        if (coordinated && destination == null) {
             send(
                 pilot,
                 TextFormatting.YELLOW,
-                "No destination is set. Sneak-right-click a block with the bound key or use /tr destination."
+                "No destination is set for coordinated flight. On the Navigation panel, sneak-right-click Reset to copy the exterior position, select Uncoordinated drive, or use the bound key or /tr destination."
             );
             return false;
         }
-        if (destination.getDimension() == TardisDimensionManager.getDimensionId()) {
+        if (coordinated && destination.getDimension() == TardisDimensionManager.getDimensionId()) {
             send(pilot, TextFormatting.RED, "The exterior cannot land inside the TARDIS interior dimension.");
             return false;
         }
@@ -73,13 +80,15 @@ public final class TardisFlightService {
             return false;
         }
 
-        String restriction = TardisConfig.describeFlightRestriction(
-            exteriorPosition.getDimension(),
-            destination.getDimension()
-        );
-        if (!restriction.isEmpty()) {
-            send(pilot, TextFormatting.RED, restriction);
-            return false;
+        if (coordinated) {
+            String restriction = TardisConfig.describeFlightRestriction(
+                exteriorPosition.getDimension(),
+                destination.getDimension()
+            );
+            if (!restriction.isEmpty()) {
+                send(pilot, TextFormatting.RED, restriction);
+                return false;
+            }
         }
 
         WorldServer exteriorWorld = getOrLoadWorld(server, exteriorPosition.getDimension());
@@ -107,23 +116,25 @@ public final class TardisFlightService {
             send(pilot, TextFormatting.RED, systemFailure + " Repair the damaged subsystem at the engine core.");
             return false;
         }
+
         long startedAt = System.currentTimeMillis();
-        DimensionPosition resolvedDestination = resolveFlightTarget(server, record, destination, startedAt);
-        long durationMillis = TardisUpgradeService.applyFlightDuration(
-            record,
-            TardisDamageService.applyDurationPenalty(
-                record,
-                calculateFlightDurationMillis(exteriorPosition, destination, record.getFlightSpeed())
-            )
-        );
-        long readyAt = startedAt + durationMillis;
-        long energyCost = TardisEnergyService.calculateFlightCost(record, exteriorPosition, destination);
+        DimensionPosition resolvedDestination = coordinated
+            ? resolveFlightTarget(server, record, destination, startedAt)
+            : null;
+        long durationMillis = coordinated
+            ? calculateEffectiveFlightDurationMillis(record, exteriorPosition, destination)
+            : 0L;
+        DimensionPosition energyTarget = coordinated ? destination : exteriorPosition;
+        long energyCost = TardisEnergyService.calculateFlightCost(record, exteriorPosition, energyTarget);
+        DimensionPosition eventTarget = coordinated && resolvedDestination != null
+            ? resolvedDestination
+            : exteriorPosition;
 
         TardisFlightEvent.Takeoff takeoffEvent = new TardisFlightEvent.Takeoff(
             pilot,
             record,
             exteriorPosition,
-            resolvedDestination,
+            eventTarget,
             durationMillis
         );
         if (MinecraftForge.EVENT_BUS.post(takeoffEvent)) {
@@ -150,9 +161,11 @@ public final class TardisFlightService {
             record.getTardisId(),
             locked,
             startedAt,
-            readyAt,
             departureFacing,
-            resolvedDestination
+            coordinated ? destination : null,
+            resolvedDestination,
+            durationMillis,
+            coordinated
         )) {
             TardisEnergyService.refund(data, record, energyCost);
             send(pilot, TextFormatting.RED, "The flight state could not be started. Its Artron cost was refunded.");
@@ -195,15 +208,34 @@ public final class TardisFlightService {
             return false;
         }
 
-        TardisDamageService.applyTakeoffWear(data, record, exteriorPosition, destination);
+        TardisDamageService.applyTakeoffWear(data, record, exteriorPosition, energyTarget);
+        data.setConsoleControlState(
+            record.getTardisId(),
+            ConsoleControlId.MAIN_QUANTUM_HANDBRAKE,
+            1
+        );
+        data.resetTakeoffSequence(record.getTardisId());
         pilot.getServerWorld().playSound(null, controlPos, ModSounds.TAKEOFF, SoundCategory.BLOCKS, 0.9F, 1.0F);
+
+        if (!coordinated) {
+            send(
+                pilot,
+                TextFormatting.AQUA,
+                "The TARDIS enters uncoordinated vortex flight. No destination is required and no travel occurs until Coordinated drive is selected; landing now returns to the departure position. Artron cost: "
+                    + TardisEnergyService.format(energyCost) + " AU; remaining: "
+                    + TardisEnergyService.format(record.getArtronEnergy()) + " AU; systems: "
+                    + TardisDamageService.describe(record) + "."
+            );
+            return true;
+        }
+
         String drift = resolvedDestination.equals(destination)
             ? ""
             : "; resolved landing target: " + resolvedDestination.toString();
         send(
             pilot,
             TextFormatting.AQUA,
-            "The TARDIS enters flight. Estimated travel time: " + formatDuration(durationMillis)
+            "The TARDIS enters coordinated flight. Estimated travel time: " + formatDuration(durationMillis)
                 + "; speed: " + record.getFlightSpeed().getName()
                 + "; accuracy: " + record.getFlightAccuracy().getName()
                 + drift
@@ -225,6 +257,84 @@ public final class TardisFlightService {
         LandingMode mode,
         boolean forceLanding
     ) {
+        if (
+            record != null
+                && record.isInFlight()
+                && !record.isCoordinatedDriveMode()
+                && !forceLanding
+                && mode != LandingMode.DEPARTURE
+        ) {
+            return landAtTravelledPosition(pilot, record, controlPos, mode);
+        }
+        return landInternal(
+            pilot,
+            record,
+            controlPos,
+            mode,
+            forceLanding,
+            forceLanding,
+            null,
+            null,
+            false
+        );
+    }
+
+    /**
+     * Lands at the conceptual position already reached by coordinated travel.
+     * This is used by uncoordinated handbrake landings and sneak-handbrake
+     * emergency landings. It bypasses the travel timer but never force-replaces
+     * obstructing blocks.
+     */
+    public static boolean landAtTravelledPosition(
+        EntityPlayerMP pilot,
+        TardisRecord record,
+        BlockPos controlPos,
+        LandingMode mode
+    ) {
+        if (pilot == null || record == null || !record.isInFlight()) {
+            return false;
+        }
+        long nowMillis = System.currentTimeMillis();
+        DimensionPosition current = !record.isCoordinatedDriveMode()
+            ? record.getFlightPausedPosition()
+            : null;
+        if (current == null) {
+            current = record.getCurrentFlightPosition(nowMillis);
+        }
+        if (current == null) {
+            current = record.getFlightDeparture();
+        }
+        if (current == null) {
+            send(pilot, TextFormatting.RED, "The travelled position could not be reconstructed.");
+            return false;
+        }
+        EnumFacing facing = record.hasCoordinatedTravel()
+            ? randomHorizontalFacing(record, nowMillis)
+            : record.getFlightDepartureFacing();
+        return landInternal(
+            pilot,
+            record,
+            controlPos,
+            mode,
+            true,
+            false,
+            current,
+            facing,
+            true
+        );
+    }
+
+    private static boolean landInternal(
+        EntityPlayerMP pilot,
+        TardisRecord record,
+        BlockPos controlPos,
+        LandingMode mode,
+        boolean bypassTravelTimer,
+        boolean forcePlacement,
+        @Nullable DimensionPosition positionOverride,
+        @Nullable EnumFacing facingOverride,
+        boolean interruptedTravel
+    ) {
         MinecraftServer server = pilot.getServer();
         if (server == null) {
             return false;
@@ -235,12 +345,13 @@ public final class TardisFlightService {
         }
 
         long now = System.currentTimeMillis();
-        if (!forceLanding && !record.isFlightReady(now)) {
+        if (!bypassTravelTimer && !record.isFlightReady(now)) {
             send(
                 pilot,
                 TextFormatting.YELLOW,
                 "The TARDIS is still travelling: " + record.getFlightProgressPercent(now) + "% complete, "
-                    + formatDuration(record.getFlightRemainingMillis(now)) + " remaining."
+                    + formatDuration(record.getFlightRemainingMillis(now))
+                    + " remaining. Sneak-right-click the handbrake for an early landing."
             );
             return false;
         }
@@ -248,7 +359,10 @@ public final class TardisFlightService {
         DimensionPosition flightDeparture = record.getFlightDeparture();
         DimensionPosition requestedPosition;
         EnumFacing requestedFacing;
-        if (mode == LandingMode.DEPARTURE) {
+        if (positionOverride != null) {
+            requestedPosition = positionOverride;
+            requestedFacing = facingOverride == null ? EnumFacing.NORTH : facingOverride;
+        } else if (mode == LandingMode.DEPARTURE) {
             requestedPosition = flightDeparture;
             requestedFacing = record.getFlightDepartureFacing();
             if (requestedPosition == null) {
@@ -271,7 +385,7 @@ public final class TardisFlightService {
             send(pilot, TextFormatting.RED, "The exterior cannot land inside the TARDIS interior dimension.");
             return false;
         }
-        if (!forceLanding && flightDeparture != null) {
+        if (!forcePlacement && flightDeparture != null) {
             String restriction = TardisConfig.describeFlightRestriction(
                 flightDeparture.getDimension(),
                 requestedPosition.getDimension()
@@ -292,12 +406,38 @@ public final class TardisFlightService {
         cleanupOrphanedExteriorTop(targetWorld, requestedTarget);
 
         BlockPos actualTarget = requestedTarget;
-        if (forceLanding) {
+        if (forcePlacement) {
             if (requestedTarget.getY() < 0 || requestedTarget.getY() > 254) {
                 send(
                     pilot,
                     TextFormatting.RED,
                     "Even a forced landing needs its lower block between Y=0 and Y=254."
+                );
+                return false;
+            }
+        } else if (mode == LandingMode.SURFACE) {
+            actualTarget = findSurfaceLanding(targetWorld, requestedTarget);
+            if (actualTarget == null) {
+                send(
+                    pilot,
+                    TextFormatting.RED,
+                    "No clear surface landing was found at the selected X/Z. The TARDIS remains in flight."
+                );
+                return false;
+            }
+        } else if (mode == LandingMode.NEAREST_SOLID) {
+            actualTarget = findNearestSolidLanding(
+                targetWorld,
+                requestedTarget,
+                TardisConfig.getSafeLandingSearchRadius()
+            );
+            if (actualTarget == null) {
+                send(
+                    pilot,
+                    TextFormatting.RED,
+                    "No solid-supported landing was found near the selected Y within "
+                        + TardisConfig.getSafeLandingSearchRadius()
+                        + " horizontal blocks. The TARDIS remains in flight."
                 );
                 return false;
             }
@@ -317,20 +457,21 @@ public final class TardisFlightService {
                 return false;
             }
         } else {
-            if (requestedTarget.getY() < 1 || requestedTarget.getY() > 254) {
-                send(pilot, TextFormatting.RED, "The destination height is outside the safe build range.");
+            if (requestedTarget.getY() < 0 || requestedTarget.getY() > 254) {
+                send(pilot, TextFormatting.RED, "The destination lower block must be between Y=0 and Y=254.");
                 return false;
             }
             if (!isLandingSpaceClear(targetWorld, requestedTarget)) {
                 send(
                     pilot,
                     TextFormatting.RED,
-                    "The exact destination is obstructed. Use /tr land nearest, /tr land departure, or an operator force landing."
+                    "The exact destination is obstructed. Select Surface or Nearest Solid, use /tr land nearest, or use an operator force landing."
                 );
                 return false;
             }
         }
 
+        cleanupOrphanedExteriorTop(targetWorld, actualTarget);
         DimensionPosition actualPosition = new DimensionPosition(requestedPosition.getDimension(), actualTarget);
         TardisFlightEvent.Landing landingEvent = new TardisFlightEvent.Landing(
             pilot,
@@ -339,7 +480,7 @@ public final class TardisFlightService {
             requestedPosition,
             actualTarget,
             mode,
-            forceLanding
+            bypassTravelTimer || forcePlacement
         );
         if (MinecraftForge.EVENT_BUS.post(landingEvent)) {
             send(pilot, TextFormatting.YELLOW, "Landing was prevented by another mod or server system.");
@@ -357,7 +498,7 @@ public final class TardisFlightService {
                 targetWorld,
                 actualTarget,
                 exteriorState,
-                forceLanding
+                forcePlacement
             );
         if (!placement.isSuccess()) {
             if (RenewedTardisMod.logger != null) {
@@ -389,10 +530,18 @@ public final class TardisFlightService {
         exterior.setLocked(record.isExteriorLocked());
 
         TardisWorldData data = TardisWorldData.get(server);
-        if (!data.completeFlight(record.getTardisId(), actualPosition)) {
+        if (!data.completeFlight(
+            record.getTardisId(),
+            actualPosition,
+            requestedFacing,
+            interruptedTravel
+        )) {
             BlockTardisExterior.removeStructure(targetWorld, actualTarget);
             send(pilot, TextFormatting.RED, "The landing state could not be saved. The TARDIS remains in flight.");
             return false;
+        }
+        if (interruptedTravel) {
+            TardisNavigationConsoleService.synchronizeAfterInterruptedLanding(record);
         }
 
         targetWorld.playSound(null, actualTarget, ModSounds.LANDING, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -416,19 +565,202 @@ public final class TardisFlightService {
             new TardisFlightEvent.Landed(pilot, record, flightDeparture, actualPosition, capturedPlayers)
         );
 
-        String recoveryNote = actualTarget.equals(requestedTarget)
-            ? ""
-            : " (nearest safe position to " + requestedPosition.toString() + ")";
+        String recoveryNote;
+        if (actualTarget.equals(requestedTarget)) {
+            recoveryNote = "";
+        } else if (mode == LandingMode.SURFACE) {
+            recoveryNote = " (surface position for target X/Z "
+                + requestedTarget.getX() + "/" + requestedTarget.getZ() + ")";
+        } else if (mode == LandingMode.NEAREST_SOLID) {
+            recoveryNote = " (nearest solid-supported position to selected Y="
+                + requestedTarget.getY() + ")";
+        } else {
+            recoveryNote = " (nearest safe position to " + requestedPosition.toString() + ")";
+        }
         String occupantNote = capturedPlayers == 0
             ? ""
             : " " + capturedPlayers + " player" + (capturedPlayers == 1 ? " was" : "s were")
                 + " moved safely into the interior.";
+        String interruptionNote = interruptedTravel
+            ? " The interrupted route was cleared and Navigation now targets this materialized position."
+            : "";
         send(
             pilot,
             TextFormatting.GREEN,
-            "The TARDIS materializes at " + actualPosition.toString() + recoveryNote + "." + occupantNote
+            "The TARDIS materializes at " + actualPosition.toString() + recoveryNote + "."
+                + interruptionNote + occupantNote
         );
         return true;
+    }
+
+    public static boolean toggleDriveMode(EntityPlayerMP pilot, TardisRecord record) {
+        if (pilot == null || record == null || pilot.getServer() == null) {
+            return false;
+        }
+        TardisWorldData data = TardisWorldData.get(pilot.getServer());
+        if (!record.isInFlight()) {
+            int next = record.isCoordinatedDriveMode() ? 1 : 0;
+            data.setConsoleControlState(record.getTardisId(), ConsoleControlId.MAIN_DRIVE_MODE, next);
+            send(
+                pilot,
+                TextFormatting.AQUA,
+                next == 0
+                    ? "Drive mode prepared: Coordinated. Takeoff requires a destination and begins travel immediately."
+                    : "Drive mode prepared: Uncoordinated. Takeoff needs no destination and remains in the vortex until Coordinated is selected."
+            );
+            return true;
+        }
+
+        long nowMillis = System.currentTimeMillis();
+        if (record.isCoordinatedDriveMode()) {
+            if (!data.pauseCoordinatedFlight(record.getTardisId(), nowMillis)) {
+                send(pilot, TextFormatting.RED, "The coordinated route could not be paused.");
+                return true;
+            }
+            send(
+                pilot,
+                TextFormatting.GOLD,
+                record.hasCoordinatedTravel()
+                    ? "Drive mode: Uncoordinated. Travel is paused at "
+                        + record.getFlightProgressPercent(nowMillis)
+                        + "% at " + record.getFlightPausedPosition()
+                        + "; using the handbrake now lands at that frozen position."
+                    : "Drive mode: Uncoordinated. No coordinated travel has occurred; using the handbrake returns to departure."
+            );
+            return true;
+        }
+
+        DimensionPosition destination = record.getDestinationPosition();
+        if (destination == null) {
+            send(
+                pilot,
+                TextFormatting.YELLOW,
+                "Coordinated drive needs a destination. The TARDIS remains in uncoordinated vortex flight."
+            );
+            return true;
+        }
+        if (destination.getDimension() == TardisDimensionManager.getDimensionId()) {
+            send(
+                pilot,
+                TextFormatting.RED,
+                "The exterior cannot travel into the TARDIS interior dimension. The drive remains uncoordinated."
+            );
+            return true;
+        }
+
+        DimensionPosition current = record.getCurrentFlightPosition(nowMillis);
+        if (current == null) {
+            current = record.getFlightDeparture();
+        }
+        if (current == null) {
+            send(pilot, TextFormatting.RED, "The current travelled position could not be reconstructed.");
+            return true;
+        }
+        String restriction = TardisConfig.describeFlightRestriction(
+            current.getDimension(),
+            destination.getDimension()
+        );
+        if (!restriction.isEmpty()) {
+            send(pilot, TextFormatting.RED, restriction + " The TARDIS remains uncoordinated.");
+            return true;
+        }
+
+        boolean resumeExistingRoute = record.hasFlightRoute() && record.isFlightRouteFor(destination);
+        if (resumeExistingRoute) {
+            if (!data.resumeCoordinatedFlight(record.getTardisId(), nowMillis)) {
+                send(pilot, TextFormatting.RED, "The paused coordinated route could not be resumed.");
+                return true;
+            }
+            send(
+                pilot,
+                TextFormatting.AQUA,
+                "Drive mode: Coordinated. Travel resumed toward " + destination.toString() + "; "
+                    + formatDuration(record.getFlightRemainingMillis(nowMillis)) + " remaining."
+            );
+            return true;
+        }
+
+        DimensionPosition resolved = resolveFlightTarget(
+            pilot.getServer(),
+            record,
+            destination,
+            nowMillis
+        );
+        long durationMillis = calculateEffectiveFlightDurationMillis(record, current, destination);
+        long routeEnergyCost = calculateRouteActivationCost(record, current, destination);
+        long availableEnergy = TardisEnergyService.refresh(data, record);
+        if (availableEnergy < routeEnergyCost) {
+            send(
+                pilot,
+                TextFormatting.RED,
+                "Insufficient Artron energy to engage the new coordinated route: "
+                    + TardisEnergyService.format(routeEnergyCost) + " AU needed, "
+                    + TardisEnergyService.format(availableEnergy) + " AU available. The drive remains uncoordinated."
+            );
+            return true;
+        }
+        if (routeEnergyCost > 0L && !TardisEnergyService.consume(data, record, routeEnergyCost)) {
+            send(pilot, TextFormatting.RED, "The coordinated-route energy cost could not be reserved.");
+            return true;
+        }
+        if (!data.setCoordinatedFlightRoute(
+            record.getTardisId(),
+            current,
+            destination,
+            resolved,
+            durationMillis,
+            nowMillis
+        )) {
+            if (routeEnergyCost > 0L) {
+                TardisEnergyService.refund(data, record, routeEnergyCost);
+            }
+            send(
+                pilot,
+                TextFormatting.RED,
+                "The coordinated route could not be created. Its Artron cost was refunded."
+            );
+            return true;
+        }
+
+        String drift = resolved == destination
+            ? ""
+            : "; resolved landing target: " + resolved.toString();
+        send(
+            pilot,
+            TextFormatting.AQUA,
+            "Drive mode: Coordinated. A new route began toward " + destination.toString()
+                + drift + "; " + formatDuration(durationMillis) + " remaining; Artron cost: "
+                + TardisEnergyService.format(routeEnergyCost) + " AU."
+        );
+        return true;
+    }
+
+    private static long calculateRouteActivationCost(
+        TardisRecord record,
+        DimensionPosition current,
+        DimensionPosition destination
+    ) {
+        long fullCost = TardisEnergyService.calculateFlightCost(record, current, destination);
+        if (record.hasCoordinatedTravel()) {
+            return fullCost;
+        }
+        // Uncoordinated takeoff already paid the stationary/base flight cost.
+        long alreadyPaidBase = TardisEnergyService.calculateFlightCost(record, current, current);
+        return Math.max(0L, fullCost - alreadyPaidBase);
+    }
+
+    public static long calculateEffectiveFlightDurationMillis(
+        TardisRecord record,
+        DimensionPosition departure,
+        DimensionPosition destination
+    ) {
+        return TardisUpgradeService.applyFlightDuration(
+            record,
+            TardisDamageService.applyDurationPenalty(
+                record,
+                calculateFlightDurationMillis(departure, destination, record.getFlightSpeed())
+            )
+        );
     }
 
     public static long calculateFlightDurationMillis(
@@ -465,6 +797,16 @@ public final class TardisFlightService {
         if (!record.isInFlight()) {
             return "LANDED";
         }
+        if (!record.isCoordinatedDriveMode()) {
+            if (!record.hasCoordinatedTravel()) {
+                return "UNCOORDINATED VORTEX; no coordinated travel";
+            }
+            return "UNCOORDINATED; travel paused at "
+                + record.getFlightProgressPercent(nowMillis) + "%";
+        }
+        if (!record.hasFlightRoute()) {
+            return "COORDINATED; no destination route";
+        }
         if (record.isFlightReady(nowMillis)) {
             return "READY TO LAND (100%)";
         }
@@ -473,7 +815,8 @@ public final class TardisFlightService {
     }
 
     public static String describeFlightProfile(TardisRecord record) {
-        return "speed=" + record.getFlightSpeed().getName()
+        return "drive=" + (record.isCoordinatedDriveMode() ? "coordinated" : "uncoordinated")
+            + ", speed=" + record.getFlightSpeed().getName()
             + ", accuracy=" + record.getFlightAccuracy().getName()
             + ", accelerator upgrades=" + record.getUpgradeCount(
                 dev.zoldmaki.renewedtardis.upgrade.TardisUpgradeType.SPEED
@@ -595,6 +938,55 @@ public final class TardisFlightService {
         return exterior.up(2);
     }
 
+
+    private static BlockPos findSurfaceLanding(WorldServer world, BlockPos requested) {
+        int x = requested.getX();
+        int z = requested.getZ();
+        for (int y = 254; y >= 1; y--) {
+            BlockPos candidate = new BlockPos(x, y, z);
+            if (isSafeLandingSpot(world, candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Finds a solid-supported position by prioritizing vertical distance from
+     * the selected Y, then horizontal distance. This allows caves and elevated
+     * platforms to be selected without silently forcing the top surface.
+     */
+    private static BlockPos findNearestSolidLanding(WorldServer world, BlockPos center, int radius) {
+        int safeRadius = Math.max(0, radius);
+        for (int verticalDistance = 0; verticalDistance <= 254; verticalDistance++) {
+            for (int ring = 0; ring <= safeRadius; ring++) {
+                for (int dx = -ring; dx <= ring; dx++) {
+                    for (int dz = -ring; dz <= ring; dz++) {
+                        if (ring > 0 && Math.abs(dx) != ring && Math.abs(dz) != ring) {
+                            continue;
+                        }
+                        if (verticalDistance == 0) {
+                            BlockPos candidate = center.add(dx, 0, dz);
+                            if (isSafeLandingSpot(world, candidate)) {
+                                return candidate;
+                            }
+                            continue;
+                        }
+                        BlockPos above = center.add(dx, verticalDistance, dz);
+                        if (isSafeLandingSpot(world, above)) {
+                            return above;
+                        }
+                        BlockPos below = center.add(dx, -verticalDistance, dz);
+                        if (isSafeLandingSpot(world, below)) {
+                            return below;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     private static BlockPos findNearestSafeLanding(WorldServer world, BlockPos center, int radius) {
         for (int ring = 0; ring <= radius; ring++) {
             for (int dx = -ring; dx <= ring; dx++) {
@@ -658,6 +1050,14 @@ public final class TardisFlightService {
         ) {
             world.setBlockToAir(target.up());
         }
+    }
+
+    private static EnumFacing randomHorizontalFacing(TardisRecord record, long nowMillis) {
+        long seed = nowMillis
+            ^ record.getTardisId().getMostSignificantBits()
+            ^ record.getTardisId().getLeastSignificantBits()
+            ^ record.getFlightStartedAtMillis();
+        return EnumFacing.byHorizontalIndex(new Random(seed).nextInt(4));
     }
 
     private static WorldServer getOrLoadWorld(MinecraftServer server, int dimension) {

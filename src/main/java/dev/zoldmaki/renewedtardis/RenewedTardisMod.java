@@ -9,6 +9,7 @@ import dev.zoldmaki.renewedtardis.integration.IntegrationManager;
 import dev.zoldmaki.renewedtardis.network.ModNetwork;
 import dev.zoldmaki.renewedtardis.sonic.SonicBuiltInActions;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisConsoleControl;
+import dev.zoldmaki.renewedtardis.tile.TileEntityTardisConsolePanel;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisEngineCore;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisExterior;
 import dev.zoldmaki.renewedtardis.tile.TileEntityTardisFlightConsole;
@@ -37,7 +38,7 @@ import org.apache.logging.log4j.Logger;
 public final class RenewedTardisMod {
     public static final String MOD_ID = "renewedtardis";
     public static final String NAME = "TARDIS Renewed";
-    public static final String VERSION = "0.21.0-alpha";
+    public static final String VERSION = "0.22.6-alpha";
 
     public static Logger logger;
 
@@ -65,6 +66,10 @@ public final class RenewedTardisMod {
             TileEntityTardisConsoleControl.class,
             new ResourceLocation(MOD_ID, "tardis_console_control")
         );
+        GameRegistry.registerTileEntity(
+            TileEntityTardisConsolePanel.class,
+            new ResourceLocation(MOD_ID, "tardis_console_panel")
+        );
 
         GameRegistry.registerTileEntity(
             TileEntityTardisEngineCore.class,
@@ -80,7 +85,7 @@ public final class RenewedTardisMod {
         );
 
         logger.info(
-            "TARDIS Renewed Phase 20 pre-initialization started with interior dimension {}.",
+            "TARDIS Renewed Phase 21 pre-initialization started with interior dimension {}.",
             TardisDimensionManager.getDimensionId()
         );
     }
@@ -91,13 +96,13 @@ public final class RenewedTardisMod {
         OreDictionary.registerOre("blockChronosteel", ModBlocks.CHRONOSTEEL_BLOCK);
 
         IntegrationManager.initializeStartup();
-        logger.info("TARDIS Renewed Phase 20 initialization completed: diagnostics, recovery tooling, and stabilization checks are available.");
+        logger.info("TARDIS Renewed Phase 21 initialization completed: physical console state, registries, and placeholder panel routing are available.");
     }
 
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
         IntegrationManager.initializeLate();
-        logger.info("TARDIS Renewed Phase 20 optional integration initialization completed.");
+        logger.info("TARDIS Renewed Phase 21 optional integration initialization completed.");
     }
 
     @Mod.EventHandler

@@ -211,10 +211,12 @@ public final class ItemSonicScrewdriver extends Item {
 
         if (record.isInFlight()) {
             long now = System.currentTimeMillis();
-            send(player, TextFormatting.AQUA,
-                "The linked TARDIS is in flight: " + record.getFlightProgressPercent(now)
-                    + "% complete, " + TardisFlightService.formatDuration(record.getFlightRemainingMillis(now))
-                    + " remaining.");
+            send(
+                player,
+                TextFormatting.AQUA,
+                "The linked TARDIS is in flight: "
+                    + TardisFlightService.describeFlightProgress(record, now) + "."
+            );
             return true;
         }
 

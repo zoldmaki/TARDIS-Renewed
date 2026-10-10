@@ -1,5 +1,6 @@
 package dev.zoldmaki.renewedtardis.dimension;
 
+import dev.zoldmaki.renewedtardis.console.ConsolePanel;
 import net.minecraft.util.math.BlockPos;
 
 /**
@@ -62,6 +63,24 @@ public final class InteriorAddress {
     /** Legacy combined Phase 6-8 control, retained for existing worlds. */
     public static BlockPos getFlightConsolePosition(BlockPos center) {
         return center.add(0, 1, 0);
+    }
+
+    public static BlockPos getConsolePanelPosition(BlockPos center, ConsolePanel panel) {
+        if (panel == null) {
+            throw new IllegalArgumentException("panel cannot be null");
+        }
+        switch (panel) {
+            case SOUTH_MAIN_FLIGHT:
+                return center.add(0, 1, 1);
+            case WEST_NAVIGATION:
+                return center.add(-1, 1, 0);
+            case NORTH_ROOMS:
+                return center.add(0, 1, -1);
+            case EAST_UTILITY:
+                return center.add(1, 1, 0);
+            default:
+                throw new IllegalArgumentException("Unknown console panel: " + panel);
+        }
     }
 
     public static BlockPos getTakeoffControlPosition(BlockPos center) {

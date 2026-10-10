@@ -199,11 +199,16 @@ public final class TardisMaintenanceService {
             if (record.getFlightDeparture() == null) {
                 report.add(Severity.ERROR, "The active flight has no saved departure position.");
             }
-            if (record.getFlightResolvedDestination() == null && record.getDestinationPosition() == null) {
-                report.add(Severity.ERROR, "The active flight has neither a resolved target nor a destination.");
+            if (record.isCoordinatedDriveMode() && !record.hasFlightRoute()) {
+                report.add(Severity.ERROR, "Coordinated flight has no complete active route state.");
             }
-            if (record.getFlightReadyAtMillis() < record.getFlightStartedAtMillis()) {
-                report.add(Severity.ERROR, "The flight ready timestamp is earlier than the start timestamp.");
+            if (record.hasCoordinatedTravel() && record.getFlightRouteStart() == null) {
+                report.add(Severity.ERROR, "Travel history exists without a reconstructable route start.");
+            }
+            if (record.isCoordinatedDriveMode()
+                && record.getFlightReadyAtMillis() > 0L
+                && record.getFlightReadyAtMillis() < record.getFlightStartedAtMillis()) {
+                report.add(Severity.ERROR, "The active coordinated ready timestamp is earlier than takeoff.");
             }
         } else {
             if (record.getFlightDeparture() != null) {
@@ -437,7 +442,7 @@ public final class TardisMaintenanceService {
             logRepair(record, "interior", false);
             return RepairResult.success(
                 true,
-                "Interior door, console controls, engine core, transmat, registered rooms, and bindings were verified."
+                "Interior door, four physical console panels, compatibility controls, engine core, transmat, registered rooms, and bindings were verified."
             );
         } catch (RuntimeException exception) {
             if (RenewedTardisMod.logger != null) {

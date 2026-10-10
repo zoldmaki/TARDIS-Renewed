@@ -4,6 +4,7 @@
 
 - Complete clean client and dedicated-server builds with Java 8 and Gradle 4.9.
 - Run the full Phase 20 regression test on a copy of an older project world.
+- Complete the Phase 21A/B physical-console checklist in `PHASE21_TESTING.md`.
 - Test two real simultaneous players for crew, keys, entry, console permissions, materialization capture, transmat, and gravity lifts.
 - Test without optional integrations installed.
 - Test with the intended 1.12.2 HWYLA/Waila build installed.
@@ -16,7 +17,7 @@
 
 ## Save compatibility policy
 
-Save-data version remains `12` in Phase 20. No field is removed or renamed. New persistent changes after this point should require an explicit migration review and a documented data-version increase.
+Save-data version is `17` through Phase 21F. Phase 20 records migrate through explicit physical-console, navigation-bank, previous-position, waypoint, and Main Flight synchronization steps; no existing field is removed or renamed. Further persistent changes still require an explicit migration review and documented data-version increase.
 
 ## Packaging checks
 

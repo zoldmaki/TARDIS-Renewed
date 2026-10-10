@@ -1,6 +1,8 @@
 package dev.zoldmaki.renewedtardis.data;
 
 import dev.zoldmaki.renewedtardis.config.TardisConfig;
+import dev.zoldmaki.renewedtardis.console.ConsoleControlId;
+import dev.zoldmaki.renewedtardis.console.TardisConsoleState;
 import dev.zoldmaki.renewedtardis.access.TardisAccessMode;
 import dev.zoldmaki.renewedtardis.access.TardisCrewMember;
 import dev.zoldmaki.renewedtardis.access.TardisPermission;
@@ -9,6 +11,7 @@ import dev.zoldmaki.renewedtardis.damage.TardisDamageService;
 import dev.zoldmaki.renewedtardis.damage.TardisSubsystem;
 import dev.zoldmaki.renewedtardis.flight.FlightAccuracy;
 import dev.zoldmaki.renewedtardis.flight.FlightSpeed;
+import dev.zoldmaki.renewedtardis.flight.FlightTravelMath;
 import dev.zoldmaki.renewedtardis.upgrade.TardisUpgradeType;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,8 +69,18 @@ public final class TardisRecord {
     private FlightAccuracy flightAccuracy;
     @Nullable
     private DimensionPosition flightResolvedDestination;
+    @Nullable
+    private DimensionPosition flightRouteStart;
+    @Nullable
+    private DimensionPosition flightRouteDestination;
     private long flightStartedAtMillis;
     private long flightReadyAtMillis;
+    private long flightRouteDurationMillis;
+    private long flightRouteElapsedMillis;
+    private long flightRouteSegmentStartedAtMillis;
+    private boolean flightCoordinatedEverActive;
+    @Nullable
+    private DimensionPosition flightPausedPosition;
 
     private final EnumMap<TardisUpgradeType, Integer> upgrades;
 
@@ -79,6 +92,8 @@ public final class TardisRecord {
     private int navigationHealth;
     private int stabilizerHealth;
     private int dematerializationHealth;
+
+    private final TardisConsoleState consoleState;
 
     public TardisRecord(UUID tardisId, UUID ownerId, String ownerName, long createdAt) {
         this(
@@ -107,8 +122,15 @@ public final class TardisRecord {
             FlightSpeed.NORMAL,
             FlightAccuracy.PRECISE,
             null,
+            null,
+            null,
             0L,
             0L,
+            0L,
+            0L,
+            0L,
+            false,
+            null,
             Collections.<TardisUpgradeType, Integer>emptyMap(),
             TardisConfig.getStartingArtronEnergy(),
             TardisConfig.getDefaultArtronCapacity(),
@@ -116,7 +138,8 @@ public final class TardisRecord {
             TardisDamageService.MAX_HEALTH,
             TardisDamageService.MAX_HEALTH,
             TardisDamageService.MAX_HEALTH,
-            TardisDamageService.MAX_HEALTH
+            TardisDamageService.MAX_HEALTH,
+            new TardisConsoleState()
         );
     }
 
@@ -146,8 +169,15 @@ public final class TardisRecord {
         FlightSpeed flightSpeed,
         FlightAccuracy flightAccuracy,
         @Nullable DimensionPosition flightResolvedDestination,
+        @Nullable DimensionPosition flightRouteStart,
+        @Nullable DimensionPosition flightRouteDestination,
         long flightStartedAtMillis,
         long flightReadyAtMillis,
+        long flightRouteDurationMillis,
+        long flightRouteElapsedMillis,
+        long flightRouteSegmentStartedAtMillis,
+        boolean flightCoordinatedEverActive,
+        @Nullable DimensionPosition flightPausedPosition,
         Map<TardisUpgradeType, Integer> upgrades,
         long artronEnergy,
         long artronBaseCapacity,
@@ -155,7 +185,8 @@ public final class TardisRecord {
         int engineHealth,
         int navigationHealth,
         int stabilizerHealth,
-        int dematerializationHealth
+        int dematerializationHealth,
+        TardisConsoleState consoleState
     ) {
         this.tardisId = tardisId;
         this.ownerId = ownerId;
@@ -208,8 +239,18 @@ public final class TardisRecord {
         this.flightSpeed = flightSpeed == null ? FlightSpeed.NORMAL : flightSpeed;
         this.flightAccuracy = flightAccuracy == null ? FlightAccuracy.PRECISE : flightAccuracy;
         this.flightResolvedDestination = flightResolvedDestination;
+        this.flightRouteStart = flightRouteStart;
+        this.flightRouteDestination = flightRouteDestination;
         this.flightStartedAtMillis = Math.max(0L, flightStartedAtMillis);
         this.flightReadyAtMillis = Math.max(0L, flightReadyAtMillis);
+        this.flightRouteDurationMillis = Math.max(0L, flightRouteDurationMillis);
+        this.flightRouteElapsedMillis = FlightTravelMath.clampElapsed(
+            flightRouteElapsedMillis,
+            this.flightRouteDurationMillis
+        );
+        this.flightRouteSegmentStartedAtMillis = Math.max(0L, flightRouteSegmentStartedAtMillis);
+        this.flightCoordinatedEverActive = flightCoordinatedEverActive;
+        this.flightPausedPosition = flightPausedPosition;
         this.upgrades = new EnumMap<>(TardisUpgradeType.class);
         if (upgrades != null) {
             for (Map.Entry<TardisUpgradeType, Integer> entry : upgrades.entrySet()) {
@@ -225,6 +266,40 @@ public final class TardisRecord {
         this.navigationHealth = clampSubsystemHealth(navigationHealth);
         this.stabilizerHealth = clampSubsystemHealth(stabilizerHealth);
         this.dematerializationHealth = clampSubsystemHealth(dematerializationHealth);
+        this.consoleState = consoleState == null ? new TardisConsoleState() : consoleState;
+        synchronizePhysicalFlightControls();
+    }
+
+    private void synchronizePhysicalFlightControls() {
+        consoleState.setControlState(
+            ConsoleControlId.MAIN_SPEED,
+            flightSpeed.getConsoleState()
+        );
+        consoleState.setControlState(
+            ConsoleControlId.MAIN_QUANTUM_HANDBRAKE,
+            inFlight ? 1 : 0
+        );
+        if (destinationPosition != null) {
+            consoleState.setControlState(
+                ConsoleControlId.MAIN_DIRECTION,
+                horizontalFacingState(destinationFacing)
+            );
+        }
+    }
+
+    private static int horizontalFacingState(EnumFacing facing) {
+        EnumFacing horizontal = normalizeFacing(facing);
+        switch (horizontal) {
+            case EAST:
+                return 1;
+            case SOUTH:
+                return 2;
+            case WEST:
+                return 3;
+            case NORTH:
+            default:
+                return 0;
+        }
     }
 
     public UUID getTardisId() {
@@ -562,42 +637,131 @@ public final class TardisRecord {
         return flightResolvedDestination;
     }
 
+    @Nullable
+    public DimensionPosition getFlightRouteStart() {
+        return flightRouteStart;
+    }
+
+    @Nullable
+    public DimensionPosition getFlightRouteDestination() {
+        return flightRouteDestination;
+    }
+
+    public boolean isFlightRouteFor(@Nullable DimensionPosition destination) {
+        return samePosition(flightRouteDestination, destination);
+    }
+
     public long getFlightStartedAtMillis() {
         return flightStartedAtMillis;
     }
 
+    /** Absolute ready timestamp while coordinated travel is active, otherwise zero. */
     public long getFlightReadyAtMillis() {
         return flightReadyAtMillis;
     }
 
     public long getFlightDurationMillis() {
-        if (!inFlight || flightReadyAtMillis <= flightStartedAtMillis) {
+        return inFlight && flightCoordinatedEverActive ? flightRouteDurationMillis : 0L;
+    }
+
+    public long getFlightElapsedMillis(long nowMillis) {
+        if (!inFlight || !flightCoordinatedEverActive) {
             return 0L;
         }
-        return flightReadyAtMillis - flightStartedAtMillis;
+        long elapsed = flightRouteElapsedMillis;
+        if (flightRouteSegmentStartedAtMillis > 0L) {
+            elapsed += Math.max(0L, nowMillis - flightRouteSegmentStartedAtMillis);
+        }
+        return FlightTravelMath.clampElapsed(elapsed, flightRouteDurationMillis);
     }
 
     public long getFlightRemainingMillis(long nowMillis) {
-        if (!inFlight || flightReadyAtMillis <= 0L) {
+        if (!inFlight || !flightCoordinatedEverActive || flightResolvedDestination == null) {
             return 0L;
         }
-        return Math.max(0L, flightReadyAtMillis - nowMillis);
+        return FlightTravelMath.remainingMillis(
+            getFlightElapsedMillis(nowMillis),
+            flightRouteDurationMillis
+        );
     }
 
     public boolean isFlightReady(long nowMillis) {
-        return inFlight && (flightReadyAtMillis <= 0L || nowMillis >= flightReadyAtMillis);
+        return inFlight
+            && flightCoordinatedEverActive
+            && flightResolvedDestination != null
+            && getFlightRemainingMillis(nowMillis) == 0L;
     }
 
     public int getFlightProgressPercent(long nowMillis) {
-        if (!inFlight) {
+        if (!inFlight || !flightCoordinatedEverActive || flightResolvedDestination == null) {
             return 0;
         }
-        long duration = getFlightDurationMillis();
-        if (duration <= 0L) {
-            return 100;
+        return FlightTravelMath.progressPercent(
+            getFlightElapsedMillis(nowMillis),
+            flightRouteDurationMillis
+        );
+    }
+
+    public boolean isCoordinatedDriveMode() {
+        return consoleState.getControlState(ConsoleControlId.MAIN_DRIVE_MODE) == 0;
+    }
+
+    public boolean hasCoordinatedTravel() {
+        return inFlight && flightCoordinatedEverActive;
+    }
+
+    public boolean hasFlightRoute() {
+        return inFlight
+            && flightRouteStart != null
+            && flightRouteDestination != null
+            && flightResolvedDestination != null;
+    }
+
+    @Nullable
+    public DimensionPosition getFlightPausedPosition() {
+        return flightPausedPosition;
+    }
+
+    /**
+     * Returns the conceptual exterior position reached by coordinated travel.
+     * Minecraft dimensions have no continuous shared coordinate space, so a
+     * cross-dimensional route remains at its route start until it completes.
+     */
+    @Nullable
+    public DimensionPosition getCurrentFlightPosition(long nowMillis) {
+        if (!inFlight) {
+            return exteriorPosition;
         }
-        long elapsed = Math.max(0L, Math.min(duration, nowMillis - flightStartedAtMillis));
-        return (int) Math.min(100L, (elapsed * 100L) / duration);
+        if (flightRouteSegmentStartedAtMillis <= 0L && flightPausedPosition != null) {
+            return flightPausedPosition;
+        }
+        return calculateRoutePosition(nowMillis);
+    }
+
+    @Nullable
+    private DimensionPosition calculateRoutePosition(long nowMillis) {
+        DimensionPosition fallback = flightRouteStart != null ? flightRouteStart : flightDeparture;
+        if (!flightCoordinatedEverActive || fallback == null || flightResolvedDestination == null) {
+            return fallback;
+        }
+        long elapsed = getFlightElapsedMillis(nowMillis);
+        long duration = flightRouteDurationMillis;
+        if (duration <= 0L || elapsed >= duration) {
+            return flightResolvedDestination;
+        }
+        if (fallback.getDimension() != flightResolvedDestination.getDimension()) {
+            return fallback;
+        }
+        net.minecraft.util.math.BlockPos from = fallback.getPosition();
+        net.minecraft.util.math.BlockPos to = flightResolvedDestination.getPosition();
+        return new DimensionPosition(
+            fallback.getDimension(),
+            new net.minecraft.util.math.BlockPos(
+                FlightTravelMath.interpolateCoordinate(from.getX(), to.getX(), elapsed, duration),
+                FlightTravelMath.interpolateCoordinate(from.getY(), to.getY(), elapsed, duration),
+                FlightTravelMath.interpolateCoordinate(from.getZ(), to.getZ(), elapsed, duration)
+            )
+        );
     }
 
     void setDestination(@Nullable DimensionPosition destinationPosition, EnumFacing destinationFacing) {
@@ -615,9 +779,11 @@ public final class TardisRecord {
 
     void beginFlight(
         long startedAtMillis,
-        long readyAtMillis,
         EnumFacing departureFacing,
-        DimensionPosition resolvedDestination
+        @Nullable DimensionPosition routeDestination,
+        @Nullable DimensionPosition resolvedDestination,
+        long routeDurationMillis,
+        boolean coordinated
     ) {
         if (inFlight) {
             return;
@@ -626,9 +792,79 @@ public final class TardisRecord {
         flightDepartureFacing = normalizeFacing(departureFacing);
         exteriorPosition = null;
         inFlight = true;
-        flightResolvedDestination = resolvedDestination;
         flightStartedAtMillis = Math.max(0L, startedAtMillis);
-        flightReadyAtMillis = Math.max(flightStartedAtMillis, readyAtMillis);
+        flightRouteStart = flightDeparture;
+        flightRouteDestination = coordinated ? routeDestination : null;
+        flightResolvedDestination = coordinated ? resolvedDestination : null;
+        flightRouteDurationMillis = coordinated ? Math.max(0L, routeDurationMillis) : 0L;
+        flightRouteElapsedMillis = 0L;
+        flightRouteSegmentStartedAtMillis = coordinated ? flightStartedAtMillis : 0L;
+        flightCoordinatedEverActive = coordinated;
+        flightPausedPosition = coordinated ? null : flightDeparture;
+        flightReadyAtMillis = coordinated
+            ? flightStartedAtMillis + flightRouteDurationMillis
+            : 0L;
+    }
+
+    boolean pauseFlightRoute(long nowMillis) {
+        if (!inFlight || !flightCoordinatedEverActive || !hasFlightRoute()) {
+            flightReadyAtMillis = 0L;
+            return false;
+        }
+        DimensionPosition reached = calculateRoutePosition(nowMillis);
+        if (reached == null) {
+            return false;
+        }
+        flightRouteElapsedMillis = getFlightElapsedMillis(nowMillis);
+        flightRouteSegmentStartedAtMillis = 0L;
+        flightReadyAtMillis = 0L;
+        flightPausedPosition = reached;
+        return true;
+    }
+
+    boolean resumeFlightRoute(long nowMillis) {
+        if (
+            !inFlight
+                || flightResolvedDestination == null
+                || flightRouteStart == null
+                || flightRouteDestination == null
+        ) {
+            return false;
+        }
+        if (flightRouteSegmentStartedAtMillis > 0L) {
+            flightPausedPosition = null;
+            return true;
+        }
+        flightCoordinatedEverActive = true;
+        flightPausedPosition = null;
+        flightRouteSegmentStartedAtMillis = Math.max(1L, nowMillis);
+        flightReadyAtMillis = flightRouteSegmentStartedAtMillis
+            + FlightTravelMath.remainingMillis(flightRouteElapsedMillis, flightRouteDurationMillis);
+        return true;
+    }
+
+    void setFlightRoute(
+        DimensionPosition routeStart,
+        DimensionPosition routeDestination,
+        DimensionPosition resolvedDestination,
+        long routeDurationMillis,
+        long nowMillis,
+        boolean active
+    ) {
+        flightRouteStart = routeStart;
+        flightRouteDestination = routeDestination;
+        flightResolvedDestination = resolvedDestination;
+        flightRouteDurationMillis = Math.max(0L, routeDurationMillis);
+        flightRouteElapsedMillis = 0L;
+        flightPausedPosition = active ? null : routeStart;
+        if (active) {
+            flightCoordinatedEverActive = true;
+            flightRouteSegmentStartedAtMillis = Math.max(1L, nowMillis);
+            flightReadyAtMillis = flightRouteSegmentStartedAtMillis + flightRouteDurationMillis;
+        } else {
+            flightRouteSegmentStartedAtMillis = 0L;
+            flightReadyAtMillis = 0L;
+        }
     }
 
     void abortFlight() {
@@ -638,20 +874,33 @@ public final class TardisRecord {
         exteriorPosition = flightDeparture;
         flightDeparture = null;
         flightDepartureFacing = EnumFacing.NORTH;
-        flightResolvedDestination = null;
         inFlight = false;
-        clearFlightTiming();
+        clearFlightState();
     }
 
-    void completeFlight(DimensionPosition landedPosition) {
+    void completeFlight(
+        DimensionPosition landedPosition,
+        EnumFacing landedFacing,
+        boolean keepLandedPositionAsDestination
+    ) {
+        if (flightDeparture != null) {
+            consoleState.setPreviousMaterializedPosition(
+                flightDeparture,
+                flightDepartureFacing
+            );
+        }
         exteriorPosition = landedPosition;
         flightDeparture = null;
         flightDepartureFacing = EnumFacing.NORTH;
-        destinationPosition = null;
-        destinationFacing = EnumFacing.NORTH;
-        flightResolvedDestination = null;
+        if (keepLandedPositionAsDestination) {
+            destinationPosition = landedPosition;
+            destinationFacing = normalizeFacing(landedFacing);
+        } else {
+            destinationPosition = null;
+            destinationFacing = EnumFacing.NORTH;
+        }
         inFlight = false;
-        clearFlightTiming();
+        clearFlightState();
     }
 
     public int getUpgradeCount(TardisUpgradeType type) {
@@ -791,6 +1040,10 @@ public final class TardisRecord {
     }
 
 
+    public TardisConsoleState getConsoleState() {
+        return consoleState;
+    }
+
     public int getSubsystemHealth(TardisSubsystem subsystem) {
         if (subsystem == null) {
             return 0;
@@ -852,9 +1105,28 @@ public final class TardisRecord {
         return Math.max(0, Math.min(TardisDamageService.MAX_HEALTH, health));
     }
 
-    private void clearFlightTiming() {
+    private void clearFlightState() {
+        flightResolvedDestination = null;
+        flightRouteStart = null;
+        flightRouteDestination = null;
         flightStartedAtMillis = 0L;
         flightReadyAtMillis = 0L;
+        flightRouteDurationMillis = 0L;
+        flightRouteElapsedMillis = 0L;
+        flightRouteSegmentStartedAtMillis = 0L;
+        flightCoordinatedEverActive = false;
+        flightPausedPosition = null;
+    }
+
+    private static boolean samePosition(
+        @Nullable DimensionPosition first,
+        @Nullable DimensionPosition second
+    ) {
+        if (first == null || second == null) {
+            return first == second;
+        }
+        return first.getDimension() == second.getDimension()
+            && first.getPosition().equals(second.getPosition());
     }
 
     private static EnumFacing normalizeFacing(@Nullable EnumFacing facing) {
@@ -920,9 +1192,22 @@ public final class TardisRecord {
         if (inFlight && flightResolvedDestination != null) {
             tag.setTag("FlightResolvedDestination", flightResolvedDestination.writeToNBT());
         }
+        if (inFlight && flightRouteStart != null) {
+            tag.setTag("FlightRouteStart", flightRouteStart.writeToNBT());
+        }
+        if (inFlight && flightRouteDestination != null) {
+            tag.setTag("FlightRouteDestination", flightRouteDestination.writeToNBT());
+        }
+        if (inFlight && flightPausedPosition != null) {
+            tag.setTag("FlightPausedPosition", flightPausedPosition.writeToNBT());
+        }
         if (inFlight) {
             tag.setLong("FlightStartedAtMillis", flightStartedAtMillis);
             tag.setLong("FlightReadyAtMillis", flightReadyAtMillis);
+            tag.setLong("FlightRouteDurationMillis", flightRouteDurationMillis);
+            tag.setLong("FlightRouteElapsedMillis", flightRouteElapsedMillis);
+            tag.setLong("FlightRouteSegmentStartedAtMillis", flightRouteSegmentStartedAtMillis);
+            tag.setBoolean("FlightCoordinatedEverActive", flightCoordinatedEverActive);
         }
 
         NBTTagCompound upgradesTag = new NBTTagCompound();
@@ -945,6 +1230,8 @@ public final class TardisRecord {
         systemsTag.setInteger("Stabilizers", stabilizerHealth);
         systemsTag.setInteger("Dematerialization", dematerializationHealth);
         tag.setTag("SubsystemHealth", systemsTag);
+
+        tag.setTag("ConsoleState", consoleState.writeToNBT());
 
         return tag;
     }
@@ -1065,6 +1352,41 @@ public final class TardisRecord {
         long flightReadyAtMillis = tag.hasKey("FlightReadyAtMillis", Constants.NBT.TAG_LONG)
             ? tag.getLong("FlightReadyAtMillis")
             : 0L;
+        boolean hasRouteState = tag.hasKey("FlightCoordinatedEverActive", Constants.NBT.TAG_BYTE)
+            || tag.hasKey("FlightRouteDurationMillis", Constants.NBT.TAG_LONG)
+            || tag.hasKey("FlightRouteStart", Constants.NBT.TAG_COMPOUND)
+            || tag.hasKey("FlightRouteDestination", Constants.NBT.TAG_COMPOUND);
+        DimensionPosition flightRouteStart = tag.hasKey("FlightRouteStart", Constants.NBT.TAG_COMPOUND)
+            ? DimensionPosition.readFromNBT(tag.getCompoundTag("FlightRouteStart"))
+            : null;
+        DimensionPosition flightRouteDestination = tag.hasKey(
+            "FlightRouteDestination",
+            Constants.NBT.TAG_COMPOUND
+        )
+            ? DimensionPosition.readFromNBT(tag.getCompoundTag("FlightRouteDestination"))
+            : null;
+        long flightRouteDurationMillis = tag.hasKey("FlightRouteDurationMillis", Constants.NBT.TAG_LONG)
+            ? Math.max(0L, tag.getLong("FlightRouteDurationMillis"))
+            : 0L;
+        long flightRouteElapsedMillis = tag.hasKey("FlightRouteElapsedMillis", Constants.NBT.TAG_LONG)
+            ? Math.max(0L, tag.getLong("FlightRouteElapsedMillis"))
+            : 0L;
+        long flightRouteSegmentStartedAtMillis = tag.hasKey(
+            "FlightRouteSegmentStartedAtMillis",
+            Constants.NBT.TAG_LONG
+        )
+            ? Math.max(0L, tag.getLong("FlightRouteSegmentStartedAtMillis"))
+            : 0L;
+        boolean flightCoordinatedEverActive = tag.hasKey(
+            "FlightCoordinatedEverActive",
+            Constants.NBT.TAG_BYTE
+        ) && tag.getBoolean("FlightCoordinatedEverActive");
+        DimensionPosition flightPausedPosition = tag.hasKey(
+            "FlightPausedPosition",
+            Constants.NBT.TAG_COMPOUND
+        )
+            ? DimensionPosition.readFromNBT(tag.getCompoundTag("FlightPausedPosition"))
+            : null;
 
         EnumMap<TardisUpgradeType, Integer> upgrades = new EnumMap<>(TardisUpgradeType.class);
         if (tag.hasKey("Upgrades", Constants.NBT.TAG_COMPOUND)) {
@@ -1108,6 +1430,16 @@ public final class TardisRecord {
             ? systemsTag.getInteger("Dematerialization")
             : TardisDamageService.MAX_HEALTH;
 
+        TardisConsoleState consoleState = tag.hasKey("ConsoleState", Constants.NBT.TAG_COMPOUND)
+            ? TardisConsoleState.readFromNBT(tag.getCompoundTag("ConsoleState"))
+            : new TardisConsoleState();
+        // The flight record is authoritative over the visible handbrake state,
+        // including migration from Phase 20 saves created before physical controls.
+        consoleState.setControlState(
+            ConsoleControlId.MAIN_QUANTUM_HANDBRAKE,
+            inFlight ? 1 : 0
+        );
+
         // A corrupted/incomplete in-flight record must never silently erase a
         // still-present exterior from older data.
         if (inFlight && flightDeparture == null && exteriorPosition != null) {
@@ -1115,13 +1447,86 @@ public final class TardisRecord {
             exteriorPosition = null;
         }
 
-        // Phase 6-7 saves had no timing fields. Treat those already airborne
-        // TARDISes as immediately ready rather than trapping them in flight.
-        if (inFlight && flightReadyAtMillis < flightStartedAtMillis) {
-            flightReadyAtMillis = flightStartedAtMillis;
+        if (inFlight && !hasRouteState) {
+            // Phase 6-21F flights were always coordinated and used one real-time
+            // interval. Convert that interval into the pause/resume route state.
+            consoleState.setControlState(ConsoleControlId.MAIN_DRIVE_MODE, 0);
+            if (flightReadyAtMillis < flightStartedAtMillis) {
+                flightReadyAtMillis = flightStartedAtMillis;
+            }
+            if (flightResolvedDestination == null) {
+                flightResolvedDestination = destinationPosition;
+            }
+            flightRouteStart = flightDeparture;
+            flightRouteDestination = destinationPosition;
+            flightRouteDurationMillis = Math.max(0L, flightReadyAtMillis - flightStartedAtMillis);
+            flightRouteElapsedMillis = 0L;
+            flightRouteSegmentStartedAtMillis = Math.max(1L, flightStartedAtMillis);
+            flightCoordinatedEverActive = true;
         }
-        if (inFlight && flightResolvedDestination == null) {
-            flightResolvedDestination = destinationPosition;
+        if (inFlight && flightCoordinatedEverActive && flightRouteDestination == null) {
+            // Early Phase 21G snapshots did not persist the requested route separately.
+            flightRouteDestination = destinationPosition != null
+                ? destinationPosition
+                : flightResolvedDestination;
+        }
+        if (!inFlight) {
+            flightRouteStart = null;
+            flightRouteDestination = null;
+            flightRouteDurationMillis = 0L;
+            flightRouteElapsedMillis = 0L;
+            flightRouteSegmentStartedAtMillis = 0L;
+            flightCoordinatedEverActive = false;
+            flightPausedPosition = null;
+        } else if (consoleState.getControlState(ConsoleControlId.MAIN_DRIVE_MODE) != 0) {
+            // Phase 21G saves did not persist a frozen position for paused or
+            // purely uncoordinated flight. Reconstruct it once during load so
+            // later landing cannot advance to the route target while paused.
+            if (flightPausedPosition == null) {
+                if (!flightCoordinatedEverActive) {
+                    flightPausedPosition = flightDeparture;
+                } else if (flightRouteStart != null && flightResolvedDestination != null) {
+                    long elapsed = FlightTravelMath.clampElapsed(
+                        flightRouteElapsedMillis,
+                        flightRouteDurationMillis
+                    );
+                    if (
+                        flightRouteStart.getDimension()
+                            != flightResolvedDestination.getDimension()
+                        || flightRouteDurationMillis <= 0L
+                    ) {
+                        flightPausedPosition = elapsed >= flightRouteDurationMillis
+                            ? flightResolvedDestination
+                            : flightRouteStart;
+                    } else {
+                        net.minecraft.util.math.BlockPos from = flightRouteStart.getPosition();
+                        net.minecraft.util.math.BlockPos to = flightResolvedDestination.getPosition();
+                        flightPausedPosition = new DimensionPosition(
+                            flightRouteStart.getDimension(),
+                            new net.minecraft.util.math.BlockPos(
+                                FlightTravelMath.interpolateCoordinate(
+                                    from.getX(),
+                                    to.getX(),
+                                    elapsed,
+                                    flightRouteDurationMillis
+                                ),
+                                FlightTravelMath.interpolateCoordinate(
+                                    from.getY(),
+                                    to.getY(),
+                                    elapsed,
+                                    flightRouteDurationMillis
+                                ),
+                                FlightTravelMath.interpolateCoordinate(
+                                    from.getZ(),
+                                    to.getZ(),
+                                    elapsed,
+                                    flightRouteDurationMillis
+                                )
+                            )
+                        );
+                    }
+                }
+            }
         }
 
         return new TardisRecord(
@@ -1150,8 +1555,15 @@ public final class TardisRecord {
             flightSpeed,
             flightAccuracy,
             flightResolvedDestination,
+            flightRouteStart,
+            flightRouteDestination,
             flightStartedAtMillis,
             flightReadyAtMillis,
+            flightRouteDurationMillis,
+            flightRouteElapsedMillis,
+            flightRouteSegmentStartedAtMillis,
+            flightCoordinatedEverActive,
+            flightPausedPosition,
             upgrades,
             artronEnergy,
             artronBaseCapacity,
@@ -1159,7 +1571,8 @@ public final class TardisRecord {
             engineHealth,
             navigationHealth,
             stabilizerHealth,
-            dematerializationHealth
+            dematerializationHealth,
+            consoleState
         );
     }
 }

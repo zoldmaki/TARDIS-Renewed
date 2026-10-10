@@ -4,6 +4,8 @@ import dev.zoldmaki.renewedtardis.RenewedTardisMod;
 import dev.zoldmaki.renewedtardis.access.TardisAccessMode;
 import dev.zoldmaki.renewedtardis.access.TardisPermission;
 import dev.zoldmaki.renewedtardis.config.TardisConfig;
+import dev.zoldmaki.renewedtardis.console.ConsoleControlId;
+import dev.zoldmaki.renewedtardis.console.TardisWaypoint;
 import dev.zoldmaki.renewedtardis.dimension.InteriorAddress;
 import dev.zoldmaki.renewedtardis.damage.TardisSubsystem;
 import dev.zoldmaki.renewedtardis.dimension.TardisDimensionManager;
@@ -36,7 +38,7 @@ import net.minecraftforge.common.util.Constants;
  */
 public final class TardisWorldData extends WorldSavedData {
     public static final String DATA_NAME = RenewedTardisMod.MOD_ID + "_tardis_registry";
-    private static final int DATA_VERSION = 12;
+    private static final int DATA_VERSION = 20;
 
     private final Map<UUID, TardisRecord> records = new LinkedHashMap<>();
     private int nextInteriorIndex;
@@ -98,6 +100,12 @@ public final class TardisWorldData extends WorldSavedData {
             ? nbt.getInteger("NextInteriorIndex")
             : 0;
         nextInteriorIndex = Math.max(savedNextIndex, highestInteriorIndex + 1);
+
+        // Persist safe defaults introduced by a migration even when the player
+        // only loads and saves the world without changing any TARDIS setting.
+        if (version < DATA_VERSION) {
+            markDirty();
+        }
     }
 
     @Override
@@ -400,16 +408,112 @@ public final class TardisWorldData extends WorldSavedData {
             return false;
         }
         record.setExteriorShell(shell);
+        record.getConsoleState().resetTakeoffSequence();
         markDirty();
         return true;
     }
 
-    public boolean setDestination(UUID tardisId, DimensionPosition position, EnumFacing facing) {
+    public boolean setConsoleControlState(UUID tardisId, ConsoleControlId control, int state) {
+        TardisRecord record = getById(tardisId);
+        if (record == null || control == null) {
+            return false;
+        }
+        boolean changed = record.getConsoleState().setControlState(control, state);
+        if (changed) {
+            markDirty();
+        }
+        return changed;
+    }
+
+    public boolean setConsoleNavigationDimension(UUID tardisId, int dimensionId) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        boolean changed = record.getConsoleState().setNavigationDimensionId(dimensionId);
+        if (changed) {
+            markDirty();
+        }
+        return changed;
+    }
+
+    public boolean setConsoleWaypoint(UUID tardisId, int slotIndex, @Nullable TardisWaypoint waypoint) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        boolean changed = record.getConsoleState().setWaypoint(slotIndex, waypoint);
+        if (changed) {
+            markDirty();
+        }
+        return changed;
+    }
+
+    public boolean setConsoleWaypointName(UUID tardisId, int slotIndex, @Nullable String name) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        boolean changed = record.getConsoleState().setWaypointName(slotIndex, name);
+        if (changed) {
+            markDirty();
+        }
+        return changed;
+    }
+
+    public boolean setConsoleWaypointColor(UUID tardisId, int slotIndex, int dyeDamage) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        boolean changed = record.getConsoleState().setWaypointColor(slotIndex, dyeDamage);
+        if (changed) {
+            markDirty();
+        }
+        return changed;
+    }
+
+    public boolean setTakeoffSequenceProgress(UUID tardisId, int progress) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        boolean changed = record.getConsoleState().setTakeoffSequenceProgress(progress);
+        if (changed) {
+            markDirty();
+        }
+        return changed;
+    }
+
+    public boolean resetTakeoffSequence(UUID tardisId) {
+        TardisRecord record = getById(tardisId);
+        if (record == null) {
+            return false;
+        }
+        boolean changed = record.getConsoleState().resetTakeoffSequence();
+        if (changed) {
+            markDirty();
+        }
+        return changed;
+    }
+
+    public boolean setDestination(UUID tardisId, @Nullable DimensionPosition position, EnumFacing facing) {
         TardisRecord record = getById(tardisId);
         if (record == null) {
             return false;
         }
         record.setDestination(position, facing);
+        if (position != null) {
+            record.getConsoleState().setControlState(
+                ConsoleControlId.MAIN_DIRECTION,
+                horizontalFacingState(facing)
+            );
+        }
+        // The selected destination may be edited in flight, but the active
+        // coordinated route remains frozen until drive mode is paused and
+        // re-engaged. This avoids silent route rerolls while a control is being
+        // adjusted and preserves the resolved target chosen for that segment.
+        record.getConsoleState().resetTakeoffSequence();
         markDirty();
         return true;
     }
@@ -420,6 +524,11 @@ public final class TardisWorldData extends WorldSavedData {
             return false;
         }
         record.setFlightSpeed(speed);
+        record.getConsoleState().setControlState(
+            ConsoleControlId.MAIN_SPEED,
+            speed.getConsoleState()
+        );
+        record.getConsoleState().resetTakeoffSequence();
         markDirty();
         return true;
     }
@@ -430,18 +539,13 @@ public final class TardisWorldData extends WorldSavedData {
             return false;
         }
         record.setFlightAccuracy(accuracy);
+        record.getConsoleState().resetTakeoffSequence();
         markDirty();
         return true;
     }
 
     public boolean clearDestination(UUID tardisId) {
-        TardisRecord record = getById(tardisId);
-        if (record == null) {
-            return false;
-        }
-        record.setDestination(null, EnumFacing.NORTH);
-        markDirty();
-        return true;
+        return setDestination(tardisId, null, EnumFacing.NORTH);
     }
 
     public long refreshArtronEnergy(UUID tardisId, long nowMillis) {
@@ -604,16 +708,79 @@ public final class TardisWorldData extends WorldSavedData {
         UUID tardisId,
         boolean exteriorLocked,
         long startedAtMillis,
-        long readyAtMillis,
         EnumFacing departureFacing,
-        DimensionPosition resolvedDestination
+        @Nullable DimensionPosition routeDestination,
+        @Nullable DimensionPosition resolvedDestination,
+        long routeDurationMillis,
+        boolean coordinated
     ) {
         TardisRecord record = getById(tardisId);
         if (record == null || record.isInFlight() || record.getExteriorPosition() == null) {
             return false;
         }
         record.setExteriorLocked(exteriorLocked);
-        record.beginFlight(startedAtMillis, readyAtMillis, departureFacing, resolvedDestination);
+        record.beginFlight(
+            startedAtMillis,
+            departureFacing,
+            routeDestination,
+            resolvedDestination,
+            routeDurationMillis,
+            coordinated
+        );
+        markDirty();
+        return true;
+    }
+
+    public boolean pauseCoordinatedFlight(UUID tardisId, long nowMillis) {
+        TardisRecord record = getById(tardisId);
+        if (record == null || !record.isInFlight()) {
+            return false;
+        }
+        if (!record.pauseFlightRoute(nowMillis)) {
+            return false;
+        }
+        record.getConsoleState().setControlState(ConsoleControlId.MAIN_DRIVE_MODE, 1);
+        markDirty();
+        return true;
+    }
+
+    public boolean resumeCoordinatedFlight(UUID tardisId, long nowMillis) {
+        TardisRecord record = getById(tardisId);
+        if (record == null || !record.isInFlight() || !record.resumeFlightRoute(nowMillis)) {
+            return false;
+        }
+        record.getConsoleState().setControlState(ConsoleControlId.MAIN_DRIVE_MODE, 0);
+        markDirty();
+        return true;
+    }
+
+    public boolean setCoordinatedFlightRoute(
+        UUID tardisId,
+        DimensionPosition routeStart,
+        DimensionPosition routeDestination,
+        DimensionPosition resolvedDestination,
+        long routeDurationMillis,
+        long nowMillis
+    ) {
+        TardisRecord record = getById(tardisId);
+        if (
+            record == null
+                || !record.isInFlight()
+                || routeStart == null
+                || routeDestination == null
+                || resolvedDestination == null
+        ) {
+            return false;
+        }
+        record.setFlightRoute(
+            routeStart,
+            routeDestination,
+            resolvedDestination,
+            routeDurationMillis,
+            nowMillis,
+            true
+        );
+        record.getConsoleState().setControlState(ConsoleControlId.MAIN_DRIVE_MODE, 0);
         markDirty();
         return true;
     }
@@ -624,18 +791,47 @@ public final class TardisWorldData extends WorldSavedData {
             return false;
         }
         record.abortFlight();
+        record.getConsoleState().setControlState(ConsoleControlId.MAIN_QUANTUM_HANDBRAKE, 0);
         markDirty();
         return true;
     }
 
     public boolean completeFlight(UUID tardisId, DimensionPosition landedPosition) {
+        return completeFlight(tardisId, landedPosition, EnumFacing.NORTH, false);
+    }
+
+    public boolean completeFlight(
+        UUID tardisId,
+        DimensionPosition landedPosition,
+        EnumFacing landedFacing,
+        boolean keepLandedPositionAsDestination
+    ) {
         TardisRecord record = getById(tardisId);
         if (record == null || !record.isInFlight()) {
             return false;
         }
-        record.completeFlight(landedPosition);
+        record.completeFlight(landedPosition, landedFacing, keepLandedPositionAsDestination);
+        record.getConsoleState().setControlState(ConsoleControlId.MAIN_QUANTUM_HANDBRAKE, 0);
+        record.getConsoleState().resetTakeoffSequence();
         markDirty();
         return true;
+    }
+
+    private static int horizontalFacingState(EnumFacing facing) {
+        EnumFacing horizontal = facing == null || !facing.getAxis().isHorizontal()
+            ? EnumFacing.NORTH
+            : facing;
+        switch (horizontal) {
+            case EAST:
+                return 1;
+            case SOUTH:
+                return 2;
+            case WEST:
+                return 3;
+            case NORTH:
+            default:
+                return 0;
+        }
     }
 
     public boolean remove(UUID tardisId) {
